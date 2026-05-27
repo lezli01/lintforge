@@ -12,6 +12,7 @@ import '../severity.dart';
 import '../source_location.dart';
 
 part 'unused_function/constructor_collector.dart';
+part 'unused_function/extension_member_collector.dart';
 part 'unused_function/local_function_collector.dart';
 part 'unused_function/top_level_function_collector.dart';
 
@@ -71,6 +72,7 @@ class UnusedFunctionRule implements MultiFileAnalyzerRule {
       _TopLevelFunctionCollector(),
       _LocalFunctionCollector(),
       _ConstructorCollector(),
+      _ExtensionMemberCollector(),
     ];
 
     final diagnostics = <Diagnostic>[];
@@ -111,8 +113,14 @@ class UnusedFunctionRule implements MultiFileAnalyzerRule {
     Set<Element> globalReferences,
   ) {
     final enclosing = element.enclosingElement;
-    if (enclosing is! InterfaceElement) return false;
-    final name = enclosing.name;
+    final String? name;
+    if (enclosing is InterfaceElement) {
+      name = enclosing.name;
+    } else if (enclosing is ExtensionElement) {
+      name = enclosing.name;
+    } else {
+      return false;
+    }
     if (name == null || !name.startsWith('_')) return false;
     return !globalReferences.contains(enclosing);
   }
