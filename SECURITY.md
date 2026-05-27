@@ -3,12 +3,12 @@
 ## Supported Versions
 
 `anal` is pre-1.0.0. Security fixes are provided for the latest published
-minor version.
+version only.
 
 | Version | Supported |
 | ------- | --------- |
-| 0.1.x   | Yes       |
-| < 0.1   | No        |
+| Latest published version | Yes |
+| Earlier versions | No |
 
 ## Reporting a Vulnerability
 

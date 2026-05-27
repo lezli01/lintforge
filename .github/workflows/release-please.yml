@@ -34,6 +34,34 @@ jobs:
           config-file: release-please-config.json
           manifest-file: .release-please-manifest.json
 
+      - name: Trigger checks for release PR
+        if: steps.release.outputs.prs_created == 'true'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          RELEASE_PR: ${{ steps.release.outputs.pr }}
+          RELEASE_PRS: ${{ steps.release.outputs.prs }}
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          read -r branch number < <(
+            node -e 'const raw = process.env.RELEASE_PRS || (process.env.RELEASE_PR ? `[${process.env.RELEASE_PR}]` : "[]"); const prs = JSON.parse(raw); const pr = prs[0] || {}; console.log(`${pr.headBranchName || ""} ${pr.number || ""}`);'
+          )
+
+          if [ -z "$branch" ]; then
+            echo "No release PR branch reported by release-please."
+            exit 0
+          fi
+
+          gh workflow run ci.yml --repo "${{ github.repository }}" --ref "$branch"
+
+          if [ -n "$number" ]; then
+            gh workflow run pr-title.yml \
+              --repo "${{ github.repository }}" \
+              --ref "$branch" \
+              -f pr_number="$number"
+          fi
+
       - name: Trigger pub.dev publish for new tag
         if: steps.release.outputs.release_created == 'true'
         env:
