@@ -38,10 +38,13 @@
 
 - Updated CI and release automation to target the repository default branch.
 - Tightened package metadata for pub.dev discovery.
+- Widened the analyzer dependency to `>=9.0.0 <13.0.0` so projects using
+  `freezed >=3.2.5` can add `anal` without a version-solver conflict.
 
 ### Fixed
 
 - Fixed directory include discovery on Windows.
+- `anal` is now installable alongside `freezed ^3.2.5`.
 
 ### Changed
 
