@@ -31,7 +31,7 @@ import '../source_location.dart';
 /// declaration.
 ///
 /// A declaration is considered "used" if any `SimpleIdentifier` in the
-/// compilation unit resolves (via `staticElement`) to its declared element.
+/// compilation unit resolves (via `element`) to its declared element.
 /// This captures type annotations, constructor invocations, `extends`,
 /// `implements`, `with`, and `on` clauses, `is`/`as` checks, static-member
 /// access, enum-value access, and constructor or static tear-offs.
@@ -66,7 +66,7 @@ class UnusedClassRule implements AnalyzerRule {
     final lineInfo = context.unit.lineInfo;
     final filePath = context.filePath;
 
-    if (libraryElement.parts.isNotEmpty) {
+    if (libraryElement.fragments.length > 1) {
       return const <Diagnostic>[];
     }
 
@@ -110,11 +110,12 @@ class UnusedClassRule implements AnalyzerRule {
 
   _Candidate? _candidateFor(CompilationUnitMember declaration) {
     if (declaration is ClassDeclaration) {
-      if (!_isPrivateName(declaration.name.lexeme)) return null;
+      final nameToken = declaration.namePart.typeName;
+      if (!_isPrivateName(nameToken.lexeme)) return null;
       if (_hasVmEntryPointPragma(declaration.metadata)) return null;
       return _Candidate(
-        nameToken: declaration.name,
-        element: declaration.declaredElement,
+        nameToken: nameToken,
+        element: declaration.declaredFragment?.element,
         kindLabel: 'class',
       );
     }
@@ -123,27 +124,27 @@ class UnusedClassRule implements AnalyzerRule {
       if (_hasVmEntryPointPragma(declaration.metadata)) return null;
       return _Candidate(
         nameToken: declaration.name,
-        element: declaration.declaredElement,
+        element: declaration.declaredFragment?.element,
         kindLabel: 'mixin',
       );
     }
     if (declaration is EnumDeclaration) {
-      if (!_isPrivateName(declaration.name.lexeme)) return null;
+      final nameToken = declaration.namePart.typeName;
+      if (!_isPrivateName(nameToken.lexeme)) return null;
       if (_hasVmEntryPointPragma(declaration.metadata)) return null;
       return _Candidate(
-        nameToken: declaration.name,
-        element: declaration.declaredElement,
+        nameToken: nameToken,
+        element: declaration.declaredFragment?.element,
         kindLabel: 'enum',
       );
     }
-    // ignore: experimental_member_use
     if (declaration is ExtensionTypeDeclaration) {
-      if (!_isPrivateName(declaration.name.lexeme)) return null;
+      final nameToken = declaration.primaryConstructor.typeName;
+      if (!_isPrivateName(nameToken.lexeme)) return null;
       if (_hasVmEntryPointPragma(declaration.metadata)) return null;
       return _Candidate(
-        nameToken: declaration.name,
-        // ignore: experimental_member_use
-        element: declaration.declaredElement,
+        nameToken: nameToken,
+        element: declaration.declaredFragment?.element,
         kindLabel: 'extension type',
       );
     }
@@ -216,7 +217,7 @@ class _ReferenceCollector extends RecursiveAstVisitor<void> {
 
   @override
   void visitSimpleIdentifier(SimpleIdentifier node) {
-    final element = node.staticElement;
+    final element = node.element;
     if (element != null) sink.add(element);
     super.visitSimpleIdentifier(node);
   }
