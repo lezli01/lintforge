@@ -63,18 +63,9 @@ README.md     User-facing documentation.
 ## Testing
 
 - Tests live in `test/` and use `package:flutter_test` / `package:test`.
-- **Always write unit tests for new code.** No new function, class, or branch should land without accompanying tests. If code is genuinely untestable, refactor it until it is.
-- Every bug fix **must** add a regression test that fails without the fix and passes with it.
-- Every new public API needs at minimum:
-  - a happy-path test,
-  - tests for each documented edge case and error condition,
-  - tests for boundary values (empty, null where allowed, min/max, unicode, etc.).
-- **Aim for the highest practical coverage of real use cases**, not just line coverage. Prefer tests that exercise observable behavior and invariants over tests that mirror the implementation.
-- Cover both positive and negative paths: invalid input, thrown exceptions, async failures, and cancellation where applicable.
-- Mirror the structure of `lib/` inside `test/` (e.g. `lib/src/foo.dart` → `test/src/foo_test.dart`) and group related cases with `group(...)`.
-- Keep tests deterministic and hermetic — no network, no real filesystem outside `Directory.systemTemp`, no reliance on wall-clock time. Use fakes/mocks for I/O.
-- Run the full suite with `fvm flutter test` before committing. A PR with failing or missing tests should not be merged.
-- When practical, also run `fvm flutter test --coverage` and inspect `coverage/lcov.info` to confirm new code is exercised; do not lower overall coverage.
+- Every bug fix should add a regression test.
+- Every new public API should have at least one test covering happy-path and one edge case.
+- Run the full suite with `fvm flutter test` before committing.
 
 ## Commits — Conventional Commits
 
@@ -119,17 +110,6 @@ it in the README.
 
 Closes: #42
 ```
-
-## Changelog
-
-- **Always update [CHANGELOG.md](CHANGELOG.md)** whenever you make a user-visible change. This includes new features, bug fixes, deprecations, removals, lint-rule changes, public API tweaks, and documentation that affects consumers.
-- Follow the **[Keep a Changelog](https://keepachangelog.com/en/1.1.0/)** format, with entries grouped under: `Added`, `Changed`, `Deprecated`, `Removed`, `Fixed`, `Security`.
-- Maintain an `## [Unreleased]` section at the top. Add your entry there in the **same commit** that introduces the change — never as a separate "update changelog" commit.
-- Write entries from the **consumer's perspective**: describe what changed for users of the package, not the internal implementation.
-- Reference issues/PRs where useful (e.g. `- Added `prefer_const_constructors` lint. (#42)`).
-- On release, rename `## [Unreleased]` to `## [X.Y.Z] - YYYY-MM-DD` and bump `version:` in [pubspec.yaml](pubspec.yaml) in the same commit.
-- Purely internal changes (refactors, CI tweaks, test-only changes, chore commits) **do not** need a changelog entry — but when in doubt, add one.
-- Never edit changelog entries for already-published versions; correct mistakes by adding a new entry instead.
 
 ## Versioning & Releases
 
