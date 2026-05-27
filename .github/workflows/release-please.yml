@@ -23,7 +23,7 @@ jobs:
     steps:
       - name: Run release-please
         id: release
-        uses: googleapis/release-please-action@v5
+        uses: googleapis/release-please-action@v4
         with:
           # Uses release-please-config.json and .release-please-manifest.json
           # from the repo root.
