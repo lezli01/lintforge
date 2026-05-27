@@ -120,6 +120,21 @@ it in the README.
 Closes: #42
 ```
 
+## README
+
+- **Always keep [README.md](README.md) up to date** with the current behavior of the package. The README is the primary entry point for consumers on pub.dev and GitHub; outdated docs are a bug.
+- Update the README in the **same commit** as the code change that affects it — never as a separate "update docs" commit.
+- Update the README whenever you:
+  - add, remove, or rename a public API,
+  - add, remove, or change a bundled lint rule in [analysis_options.yaml](analysis_options.yaml),
+  - change installation, setup, or usage instructions,
+  - change supported SDK / Flutter versions,
+  - change the package's stated scope, goals, or recommended configuration.
+- Keep examples runnable and accurate: code snippets must compile against the current public API and reflect the recommended usage.
+- Keep the feature list, rule list, and any tables in sync with what the package actually ships — do not advertise rules or APIs that are not present.
+- Cross-check the README against [CHANGELOG.md](CHANGELOG.md) when releasing: every user-visible change since the last release should be reflected in both.
+- Purely internal changes (refactors, CI tweaks, test-only changes) do not require a README update.
+
 ## Changelog
 
 - **Always update [CHANGELOG.md](CHANGELOG.md)** whenever you make a user-visible change. This includes new features, bug fixes, deprecations, removals, lint-rule changes, public API tweaks, and documentation that affects consumers.
@@ -163,4 +178,5 @@ Closes: #42
 - [ ] `fvm dart analyze` — zero issues
 - [ ] `fvm flutter test` — all green
 - [ ] CHANGELOG updated (if user-visible)
+- [ ] README updated (if behavior, API, or bundled rules changed)
 - [ ] Commit message follows Conventional Commits
