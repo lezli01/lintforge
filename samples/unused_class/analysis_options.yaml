@@ -1,0 +1,10 @@
+# This sample intentionally contains unused private declarations and other
+# patterns that exist to trigger (or deliberately not trigger) the `anal`
+# `unused_class` rule. The standard Dart analyzer lints that overlap with the
+# scenarios under test are silenced here so that the file demonstrates the
+# rule in isolation.
+analyzer:
+  errors:
+    unused_element: ignore
+    unused_field: ignore
+    library_private_types_in_public_api: ignore
