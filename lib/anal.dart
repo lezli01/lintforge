@@ -13,5 +13,6 @@ export 'src/analyzer_rule.dart';
 export 'src/diagnostic.dart';
 export 'src/reporter.dart';
 export 'src/rule_registry.dart';
+export 'src/rules/unused_function_rule.dart';
 export 'src/severity.dart';
 export 'src/source_location.dart';
