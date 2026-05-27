@@ -31,7 +31,7 @@ Or edit `pubspec.yaml` directly:
 
 ```yaml
 dev_dependencies:
-  anal: ^0.1.0
+  anal: ^0.2.0
 ```
 
 ## CLI Usage
@@ -56,8 +56,8 @@ Options:
 
 By default, `anal` excludes generated files matching `*.g.dart` and
 `*.freezed.dart`. Exclude patterns are matched against the file's basename,
-its path relative to the current working directory, and its absolute path
-and any match excludes the file. To opt out of the defaults entirely:
+its path relative to the current working directory, and its absolute path;
+any match excludes the file. To opt out of the defaults entirely:
 
 ```sh
 dart run anal --no-default-excludes
