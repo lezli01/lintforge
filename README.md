@@ -31,7 +31,7 @@ Or edit `pubspec.yaml` directly:
 
 ```yaml
 dev_dependencies:
-  anal: ^0.2.0
+  anal: <version>
 ```
 
 ## CLI Usage
