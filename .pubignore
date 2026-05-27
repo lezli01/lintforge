@@ -2,6 +2,7 @@
 .fvm/
 build/
 coverage/
+samples/
 
 AGENTS.md
 CLAUDE.md
