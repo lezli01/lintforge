@@ -26,6 +26,24 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v6
 
+      - name: Verify tag ref
+        run: |
+          if [ "${{ github.ref_type }}" != "tag" ]; then
+            echo "Publishing must run from a tag ref, got '${{ github.ref }}'."
+            exit 1
+          fi
+
+      - name: Verify tag matches pubspec version
+        shell: bash
+        run: |
+          version="$(awk -F': ' '/^version:/ { print $2; exit }' pubspec.yaml | tr -d '"')"
+          expected_tag="v${version}"
+          if [ "${{ github.ref_name }}" != "${expected_tag}" ]; then
+            echo "Tag '${{ github.ref_name }}' does not match pubspec version '${version}'."
+            echo "Expected tag '${expected_tag}'."
+            exit 1
+          fi
+
       # Provisions the pub.dev OIDC credentials used by `dart pub publish`.
       # The dart binary from this step is shadowed by the Flutter SDK below,
       # but the credentials file it writes is what enables OIDC auth.

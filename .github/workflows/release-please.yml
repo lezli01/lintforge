@@ -27,7 +27,7 @@ jobs:
     steps:
       - name: Run release-please
         id: release
-        uses: googleapis/release-please-action@v4
+        uses: googleapis/release-please-action@v5
         with:
           # Uses release-please-config.json and .release-please-manifest.json
           # from the repo root.
@@ -38,4 +38,7 @@ jobs:
         if: steps.release.outputs.release_created == 'true'
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: gh workflow run publish.yml --ref "${{ steps.release.outputs.tag_name }}"
+        run: >
+          gh workflow run publish.yml
+          --repo "${{ github.repository }}"
+          --ref "${{ steps.release.outputs.tag_name }}"
