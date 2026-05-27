@@ -54,6 +54,7 @@ jobs:
           fi
 
           gh workflow run ci.yml --repo "${{ github.repository }}" --ref "$branch"
+          gh workflow run gitleaks.yml --repo "${{ github.repository }}" --ref "$branch"
 
           if [ -n "$number" ]; then
             gh workflow run pr-title.yml \

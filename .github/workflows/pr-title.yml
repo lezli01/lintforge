@@ -1,8 +1,10 @@
-name: PR Title
+name: Conventional Commits
 
-# Enforces that PR titles follow Conventional Commits. For single-commit PRs,
-# also verifies the commit title so rebase/squash histories stay releasable.
+# Enforces that PR titles and authored commit subjects follow Conventional
+# Commits. Generated merge commits from branch updates are ignored.
 on:
+  push:
+    branches: [master]
   pull_request_target:
     types:
       - opened
@@ -22,21 +24,23 @@ permissions:
 
 jobs:
   lint:
-    name: Validate PR title
+    name: Validate Conventional Commits
     runs-on: ubuntu-latest
     steps:
-      - name: Check Conventional Commits format
+      - name: Check PR title and commit subjects
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          PR_NUMBER: ${{ github.event.pull_request.number || inputs.pr_number }}
+          PR_NUMBER: ${{ github.event.pull_request.number || github.event.inputs.pr_number || '' }}
           REPOSITORY: ${{ github.repository }}
+          BEFORE_SHA: ${{ github.event.before }}
+          AFTER_SHA: ${{ github.sha }}
         shell: bash
         run: |
           set -euo pipefail
 
           conventional_re='^(feat|fix|docs|style|refactor|perf|test|build|ci|chore|revert)(\([^)]+\))?!?: .+$'
 
-          validate_title() {
+          validate_conventional() {
             local value="$1"
             local label="$2"
 
@@ -53,16 +57,46 @@ jobs:
             fi
           }
 
-          pr_title="$(gh api "repos/${REPOSITORY}/pulls/${PR_NUMBER}" --jq '.title')"
-          validate_title "$pr_title" "PR title"
+          commit_count=0
+          first_commit_title=""
+          validate_commit_stream() {
+            while IFS=$'\t' read -r sha commit_title; do
+              if [ -z "$sha" ]; then
+                continue
+              fi
 
-          commit_count="$(gh api "repos/${REPOSITORY}/pulls/${PR_NUMBER}" --jq '.commits')"
-          if [ "$commit_count" = "1" ]; then
-            commit_title="$(gh api "repos/${REPOSITORY}/pulls/${PR_NUMBER}/commits" --jq '.[0].commit.message | split("\n")[0]')"
-            validate_title "$commit_title" "Single commit title"
+              commit_count=$((commit_count + 1))
+              if [ -z "$first_commit_title" ]; then
+                first_commit_title="$commit_title"
+              fi
 
-            if [ "$commit_title" != "$pr_title" ]; then
-              echo "::error::Single commit title must match the PR title."
-              exit 1
+              if [[ "$commit_title" == Merge\ * ]]; then
+                echo "Skipping generated merge commit ${sha}: ${commit_title}"
+                continue
+              fi
+
+              validate_conventional "$commit_title" "Commit ${sha} title"
+            done
+          }
+
+          if [ -n "$PR_NUMBER" ]; then
+            pr_title="$(gh api "repos/${REPOSITORY}/pulls/${PR_NUMBER}" --jq '.title')"
+            validate_conventional "$pr_title" "PR title"
+
+            validate_commit_stream < <(
+              gh api --paginate "repos/${REPOSITORY}/pulls/${PR_NUMBER}/commits" \
+                --jq '.[] | "\(.sha[0:7])\t\(.commit.message | split("\n")[0])"'
+            )
+
+            if [ "$commit_count" = "1" ]; then
+              if [ "$first_commit_title" != "$pr_title" ]; then
+                echo "::error::Single commit title must match the PR title."
+                exit 1
+              fi
             fi
+          else
+            validate_commit_stream < <(
+              gh api "repos/${REPOSITORY}/compare/${BEFORE_SHA}...${AFTER_SHA}" \
+                --jq '.commits[] | "\(.sha[0:7])\t\(.commit.message | split("\n")[0])"'
+            )
           fi
