@@ -19,40 +19,56 @@ part 'unused_function/local_function_collector.dart';
 part 'unused_function/top_level_accessor_collector.dart';
 part 'unused_function/top_level_function_collector.dart';
 
-/// Flags function declarations that are never referenced across the
-/// analyzed file set.
+/// Flags function-shaped declarations that are never referenced across
+/// the analyzed file set.
 ///
-/// The rule runs once per analysis run with every resolved compilation
-/// unit in scope. The following kinds of declarations are inspected,
-/// each by a dedicated collector:
+/// The rule is a [MultiFileAnalyzerRule]: it is dispatched once per
+/// analysis run with every resolved compilation unit in scope, so it
+/// can resolve references that cross file boundaries. The following
+/// kinds of declarations are inspected, each by a dedicated collector:
 ///
-/// * **Top-level private functions** (identifier begins with `_`) — only
-///   when the enclosing library has no `part` files, because otherwise a
-///   sibling part could legitimately reference the function. See
-///   [_TopLevelFunctionCollector].
-/// * **Top-level getters and setters** — private declarations
-///   unconditionally; public declarations only when the file lives under
-///   a package's `lib/src/` directory. The library must have no `part`
-///   files, for the same reason as top-level functions. See
+/// * **Top-level functions** — private declarations (identifier begins
+///   with `_`) unconditionally, and public declarations only when the
+///   unit lives under a package's `lib/src/` directory. In both cases
+///   the enclosing library must have no `part` files, because
+///   otherwise a sibling part could legitimately reference the
+///   function. See [_TopLevelFunctionCollector].
+/// * **Top-level getters and setters** — same privacy + `lib/src/` and
+///   no-`part`-files rule as top-level functions. See
 ///   [_TopLevelAccessorCollector].
-/// * **Local function declarations** — functions declared inside another
-///   function or method body. See [_LocalFunctionCollector].
+/// * **Local function declarations** — functions declared inside
+///   another function or method body. See [_LocalFunctionCollector].
 /// * **Constructor declarations** on classes and enums (generative,
-///   named, factory, and redirecting forms). See [_ConstructorCollector].
+///   named, factory, and redirecting forms). See
+///   [_ConstructorCollector].
+/// * **Class, mixin, enum, and extension-type members** — instance
+///   methods, `static` methods, operators, getters, and setters. See
+///   [_ClassMemberCollector].
+/// * **Extension members** declared inside `extension Foo on T {}`
+///   blocks — methods, `static` methods, operators, getters, and
+///   setters. See [_ExtensionMemberCollector].
 ///
 /// A declaration is considered "used" if its [Element] appears in the
 /// global reference set built by [_GlobalReferenceCollector], which
-/// walks every unit in the [MultiFileAnalysisContext] and registers the
-/// resolved element of every reference-bearing AST node.
+/// walks every unit in the [MultiFileAnalysisContext] and registers
+/// the resolved element of every reference-bearing AST node — including
+/// tear-offs, named-type references, constructor invocations and
+/// redirects, operator and index expressions, explicit member accesses,
+/// and setter writes.
 ///
-/// The rule deliberately ignores public top-level functions, methods,
-/// operators, the library's `main` entry point, `external` declarations,
-/// and any declaration annotated with `@pragma('vm:entry-point')`.
+/// The rule deliberately ignores the library's `main` entry point,
+/// public top-level functions / getters / setters declared outside
+/// `lib/src/`, `external` declarations of any shape, declarations
+/// annotated with `@pragma('vm:entry-point')`, and (for top-level
+/// function and accessor candidates) any declaration in a library that
+/// has `part` files.
 ///
-/// To avoid duplicate noise with the `unused_class` rule, a candidate is
-/// also skipped when its enclosing class element is itself a private,
-/// unreferenced declaration: `unused_class` already flags that class,
-/// and re-flagging every member of it would just repeat the report.
+/// To avoid duplicate noise with the `unused_class` rule, a member
+/// candidate is also skipped when its enclosing class, mixin, enum,
+/// extension type, or extension is itself a private, unreferenced
+/// declaration: `unused_class` already flags that enclosing
+/// declaration, and re-flagging every member of it would just repeat
+/// the report.
 class UnusedFunctionRule implements MultiFileAnalyzerRule {
   /// Creates an instance of the rule. Stateless and `const`-constructible.
   const UnusedFunctionRule();
