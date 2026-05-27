@@ -58,7 +58,7 @@ const Map<String, String> _samplePackageNames = {
 
 RuleRegistry _buildCliRegistry() {
   final registry = RuleRegistry();
-  registry.register(UnusedFunctionRule());
+  registry.registerMultiFile(UnusedFunctionRule());
   registry.register(UnusedClassRule());
   registry.registerMultiFile(UnusedSourceFileRule());
   return registry;
