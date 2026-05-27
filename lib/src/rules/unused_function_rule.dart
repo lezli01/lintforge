@@ -4,6 +4,7 @@ import 'package:analyzer/dart/ast/token.dart';
 import 'package:analyzer/dart/ast/visitor.dart';
 import 'package:analyzer/dart/element/element.dart';
 import 'package:analyzer/source/line_info.dart';
+import 'package:path/path.dart' as p;
 
 import '../diagnostic.dart';
 import '../multi_file_analysis_context.dart';
@@ -15,19 +16,25 @@ part 'unused_function/class_member_collector.dart';
 part 'unused_function/constructor_collector.dart';
 part 'unused_function/extension_member_collector.dart';
 part 'unused_function/local_function_collector.dart';
+part 'unused_function/top_level_accessor_collector.dart';
 part 'unused_function/top_level_function_collector.dart';
 
 /// Flags function declarations that are never referenced across the
 /// analyzed file set.
 ///
 /// The rule runs once per analysis run with every resolved compilation
-/// unit in scope. Three kinds of declarations are inspected, each by a
-/// dedicated collector:
+/// unit in scope. The following kinds of declarations are inspected,
+/// each by a dedicated collector:
 ///
 /// * **Top-level private functions** (identifier begins with `_`) — only
 ///   when the enclosing library has no `part` files, because otherwise a
 ///   sibling part could legitimately reference the function. See
 ///   [_TopLevelFunctionCollector].
+/// * **Top-level getters and setters** — private declarations
+///   unconditionally; public declarations only when the file lives under
+///   a package's `lib/src/` directory. The library must have no `part`
+///   files, for the same reason as top-level functions. See
+///   [_TopLevelAccessorCollector].
 /// * **Local function declarations** — functions declared inside another
 ///   function or method body. See [_LocalFunctionCollector].
 /// * **Constructor declarations** on classes and enums (generative,
@@ -39,9 +46,8 @@ part 'unused_function/top_level_function_collector.dart';
 /// resolved element of every reference-bearing AST node.
 ///
 /// The rule deliberately ignores public top-level functions, methods,
-/// getters, setters, operators, the library's `main` entry point,
-/// `external` declarations, and any declaration annotated with
-/// `@pragma('vm:entry-point')`.
+/// operators, the library's `main` entry point, `external` declarations,
+/// and any declaration annotated with `@pragma('vm:entry-point')`.
 ///
 /// To avoid duplicate noise with the `unused_class` rule, a candidate is
 /// also skipped when its enclosing class element is itself a private,
@@ -71,6 +77,7 @@ class UnusedFunctionRule implements MultiFileAnalyzerRule {
 
     const collectors = <_UnusedFunctionCandidateCollector>[
       _TopLevelFunctionCollector(),
+      _TopLevelAccessorCollector(),
       _LocalFunctionCollector(),
       _ConstructorCollector(),
       _ExtensionMemberCollector(),
@@ -151,6 +158,24 @@ class UnusedFunctionRule implements MultiFileAnalyzerRule {
       correction: 'Remove "$name" or reference it.',
     );
   }
+}
+
+/// Whether a top-level declaration named [name] declared in [filePath]
+/// is eligible to be flagged by the rule based on its name's privacy and
+/// the file's location within a package layout.
+///
+/// Private names (identifier begins with `_`) are always eligible.
+/// Public names are only eligible when the file lives under a package's
+/// `lib/src/` directory — files outside `lib/src/` form a package's
+/// public surface and consumers reference them externally, so the rule
+/// can never be sure a public top-level declaration is truly unused.
+bool _isTopLevelCandidateName(String name, String filePath) {
+  if (name.startsWith('_')) return true;
+  final segments = p.split(filePath);
+  for (var i = 0; i + 1 < segments.length; i++) {
+    if (segments[i] == 'lib' && segments[i + 1] == 'src') return true;
+  }
+  return false;
 }
 
 bool _hasVmEntryPointPragma(NodeList<Annotation> metadata) {
@@ -307,5 +332,18 @@ class _GlobalReferenceCollector extends RecursiveAstVisitor<void> {
   void visitPrefixedIdentifier(PrefixedIdentifier node) {
     _add(node.element);
     super.visitPrefixedIdentifier(node);
+  }
+
+  @override
+  void visitAssignmentExpression(AssignmentExpression node) {
+    // In a write context (`foo = …` or compound `foo += …`), the LHS
+    // identifier's resolved element is the read element if any. The
+    // setter is only reachable via the assignment's own [writeElement].
+    // Without this hook a cross-file setter write would never land in
+    // the global reference set, and a top-level setter declaration
+    // would be flagged as unused even when written to from elsewhere.
+    _add(node.writeElement);
+    _add(node.readElement);
+    super.visitAssignmentExpression(node);
   }
 }
