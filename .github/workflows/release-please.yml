@@ -46,6 +46,12 @@ jobs:
         with:
           ref: ${{ needs.release-please.outputs.tag_name }}
 
+      # Provisions the pub.dev OIDC credentials used by `dart pub publish`.
+      # The dart binary from this step is shadowed by the Flutter SDK below,
+      # but the credentials file it writes is what enables OIDC auth.
+      - name: Set up Dart (for pub.dev OIDC)
+        uses: dart-lang/setup-dart@v1
+
       - name: Set up Flutter
         uses: subosito/flutter-action@v2
         with:
