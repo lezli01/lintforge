@@ -51,7 +51,7 @@ class UnusedFunctionRule implements AnalyzerRule {
     final lineInfo = context.unit.lineInfo;
     final filePath = context.filePath;
 
-    final libraryHasParts = libraryElement.parts.isNotEmpty;
+    final libraryHasParts = libraryElement.fragments.length > 1;
 
     final topLevelCandidates = <FunctionDeclaration>[];
     if (!libraryHasParts) {
@@ -72,7 +72,7 @@ class UnusedFunctionRule implements AnalyzerRule {
     final diagnostics = <Diagnostic>[];
 
     for (final declaration in topLevelCandidates) {
-      final element = declaration.declaredElement;
+      final element = declaration.declaredFragment?.element;
       if (element == null) continue;
       if (unitReferences.contains(element)) continue;
       diagnostics.add(
@@ -87,7 +87,7 @@ class UnusedFunctionRule implements AnalyzerRule {
 
     for (final candidate in localCandidates) {
       final declaration = candidate.declaration;
-      final element = declaration.declaredElement;
+      final element = declaration.declaredFragment?.element;
       if (element == null) continue;
       final bodyReferences = <Element>{};
       candidate.enclosingBody.accept(_ReferenceCollector(bodyReferences));
@@ -216,7 +216,7 @@ class _ReferenceCollector extends RecursiveAstVisitor<void> {
 
   @override
   void visitSimpleIdentifier(SimpleIdentifier node) {
-    final element = node.staticElement;
+    final element = node.element;
     if (element != null) sink.add(element);
     super.visitSimpleIdentifier(node);
   }
