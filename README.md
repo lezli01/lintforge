@@ -207,6 +207,29 @@ import graphs or symbol indices. Register multi-file rules with the same
 `unused_source_file` rule is implemented this way. Existing `AnalyzerRule`
 implementations continue to work unchanged.
 
+## Sample Projects
+
+The [`samples/`](samples/) directory contains live, executable
+documentation of each built-in rule: one self-contained Dart/Flutter
+package per rule, plus an `all_rules` sample that exercises every
+built-in rule together. Each sample path-depends on this package and
+ships a `README.md` listing the exact positive (MUST be flagged) and
+negative (MUST NOT be flagged) cases for the rule it covers.
+
+| Sample                                                                 | Exercises                                  |
+| ---------------------------------------------------------------------- | ------------------------------------------ |
+| [`samples/unused_function/`](samples/unused_function/)                 | the `unused_function` rule                 |
+| [`samples/unused_class/`](samples/unused_class/)                       | the `unused_class` rule                    |
+| [`samples/unused_source_file/`](samples/unused_source_file/)           | the `unused_source_file` multi-file rule   |
+| [`samples/all_rules/`](samples/all_rules/)                             | every built-in rule together               |
+
+Run any sample from the repository root, for example:
+
+```sh
+fvm dart pub get --directory samples/unused_function
+fvm dart run anal samples/unused_function/lib
+```
+
 ## Development
 
 This repository uses FVM to pin Flutter. Install the configured SDK before

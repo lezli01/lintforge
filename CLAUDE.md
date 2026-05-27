@@ -76,6 +76,42 @@ README.md     User-facing documentation.
 - Run the full suite with `fvm flutter test` before committing. A PR with failing or missing tests should not be merged.
 - When practical, also run `fvm flutter test --coverage` and inspect `coverage/lcov.info` to confirm new code is exercised; do not lower overall coverage.
 
+## Sample Projects
+
+The [samples/](samples/) directory contains **one self-contained sample
+project per built-in rule shipped under [lib/src/rules/](lib/src/rules/),
+plus an `all_rules` sample** that exercises every built-in rule together.
+Each sample is a real `pub get`-resolved Dart/Flutter package that
+path-depends on the root `anal` package and whose `README.md` documents
+the exact positive (MUST be flagged) and negative (MUST NOT be flagged)
+cases for the rule it covers.
+
+Current samples (one per rule + the combined sample):
+
+- [samples/unused_function/](samples/unused_function/) — exercises `unused_function`.
+- [samples/unused_class/](samples/unused_class/) — exercises `unused_class`.
+- [samples/unused_source_file/](samples/unused_source_file/) — exercises `unused_source_file`.
+- [samples/all_rules/](samples/all_rules/) — exercises every built-in rule together.
+
+**This set is a HARD MAINTENANCE REQUIREMENT.** Whenever a built-in rule
+under [lib/src/rules/](lib/src/rules/) is added, removed, or renamed, in
+the **same commit**:
+
+- A matching `samples/<rule_id>/` project MUST be added, removed, or
+  renamed so the per-rule sample tracks the rule.
+- The combined [samples/all_rules/](samples/all_rules/) sample MUST be
+  updated — add, remove, or re-tag positive/negative cases — so it
+  continues to exercise every shipped rule.
+- [test/samples_test.dart](test/samples_test.dart) MUST be updated to
+  reflect the new expected diagnostics, so the samples remain
+  executable documentation verified by the test suite.
+- Each affected sample's `README.md` (positive/negative tables and
+  "expected output" block) MUST be brought back in sync with the
+  rule's actual behavior.
+
+A rule change that does not update its sample, the `all_rules` sample,
+and `test/samples_test.dart` is incomplete and must not land.
+
 ## Commits — Conventional Commits
 
 This repository uses **[Conventional Commits](https://www.conventionalcommits.org/)**. Every commit message must follow:
@@ -183,4 +219,5 @@ Closes: #42
 - [ ] `fvm flutter test` — all green
 - [ ] CHANGELOG updated (if user-visible)
 - [ ] README updated (if behavior, API, or bundled rules changed)
+- [ ] `samples/` and `test/samples_test.dart` updated for any rule changes
 - [ ] Commit message follows Conventional Commits
