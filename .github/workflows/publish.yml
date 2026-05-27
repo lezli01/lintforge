@@ -1,0 +1,57 @@
+name: Publish to pub.dev
+
+# Triggered by the tag that release-please pushes (e.g. v0.3.0).
+# Publishing must run on a tag ref, because pub.dev's automated
+# publishing only accepts OIDC tokens whose refType is 'tag'.
+on:
+  push:
+    tags:
+      - 'v[0-9]+.[0-9]+.[0-9]+'
+      - 'v[0-9]+.[0-9]+.[0-9]+-*'
+  # Allow manual republishing of an existing tag. Must be dispatched
+  # against the tag ref itself (not a branch) so pub.dev's OIDC check
+  # sees refType=tag.
+  workflow_dispatch:
+
+jobs:
+  publish:
+    name: Publish to pub.dev
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    # Required for OIDC-based authentication to pub.dev.
+    permissions:
+      id-token: write
+      contents: read
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+
+      # Provisions the pub.dev OIDC credentials used by `dart pub publish`.
+      # The dart binary from this step is shadowed by the Flutter SDK below,
+      # but the credentials file it writes is what enables OIDC auth.
+      - name: Set up Dart (for pub.dev OIDC)
+        uses: dart-lang/setup-dart@v1
+
+      - name: Set up Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version-file: .fvmrc
+          cache: true
+
+      - name: Install dependencies
+        run: flutter pub get
+
+      - name: Verify formatting
+        run: dart format --output=none --set-exit-if-changed .
+
+      - name: Analyze
+        run: dart analyze --fatal-infos --fatal-warnings
+
+      - name: Run tests
+        run: flutter test
+
+      - name: Dry-run publish
+        run: dart pub publish --dry-run
+
+      - name: Publish to pub.dev
+        run: dart pub publish --force
