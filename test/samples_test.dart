@@ -39,7 +39,11 @@ const Map<String, List<(String, String)>> _expectedDiagnostics = {
     ('unused_class', 'lib/unused_class_sample.dart'),
   ],
   // samples/unused_source_file: README documents a single unused_source_file
-  // diagnostic pointing at lib/src/orphan.dart.
+  // diagnostic pointing at lib/src/orphan.dart. The other lib/src files
+  // (used.dart, used_via_part.dart, conditional_hub.dart, _io_impl.dart,
+  // _web_impl.dart, deferred_target.dart) are negative cases — reached via
+  // ordinary import, `part`, every `if (...)` configuration of a conditional
+  // import, and a deferred import respectively — and must NOT be flagged.
   'unused_source_file': [('unused_source_file', 'lib/src/orphan.dart')],
   // samples/all_rules: README documents sixteen diagnostics across all three
   // built-in rules — eleven unused_function (P11 in lib/src/internals.dart and
