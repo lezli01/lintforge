@@ -25,13 +25,21 @@ void main() {
       }
     });
 
-    Future<List<Diagnostic>> runRule(Map<String, String> files) async {
+    Future<List<Diagnostic>> runRule(
+      Map<String, String> files, {
+      Set<String> excluded = const <String>{},
+    }) async {
       final paths = <String>[];
+      final excludedAbs = <String>{};
       for (final entry in files.entries) {
         final file = File(p.join(tempDir.path, entry.key));
         file.parent.createSync(recursive: true);
         file.writeAsStringSync(entry.value);
-        paths.add(p.normalize(p.absolute(file.path)));
+        final abs = p.normalize(p.absolute(file.path));
+        paths.add(abs);
+        if (excluded.contains(entry.key)) {
+          excludedAbs.add(abs);
+        }
       }
       if (paths.isEmpty) {
         final context = MultiFileAnalysisContext(
@@ -54,6 +62,9 @@ void main() {
       final context = MultiFileAnalysisContext(
         units: units,
         analyzedFilePaths: paths.toSet(),
+        reportableFilePaths: excludedAbs.isEmpty
+            ? null
+            : paths.where((p) => !excludedAbs.contains(p)).toSet(),
       );
       return const UnusedSourceFileRule().analyze(context).toList();
     }
@@ -324,6 +335,67 @@ void main() {
       });
       expect(diagnostics, isEmpty);
     });
+
+    test(
+      'an excluded entry point can anchor reachability for a reportable file',
+      () async {
+        // `bin/script.dart` is excluded from reporting (only present in
+        // `analyzedFilePaths`, not in `reportableFilePaths`), but it carries
+        // a top-level `main` and imports the otherwise-orphan reportable file
+        // `lib/src/used_by_script.dart`. The reportable file must therefore
+        // NOT be flagged: reachability is computed over the full loaded set.
+        final diagnostics = await runRule(
+          {
+            p.join('bin', 'script.dart'):
+                "import '../lib/src/used_by_script.dart';\n"
+                "void main() { fromScript(); }\n",
+            p.join('lib', 'src', 'used_by_script.dart'):
+                'int fromScript() => 1;\n',
+          },
+          excluded: {p.join('bin', 'script.dart')},
+        );
+        expect(diagnostics, isEmpty);
+      },
+    );
+
+    test('an excluded file is never the subject of a diagnostic, '
+        'and the reportable file that imports it is unaffected', () async {
+      // `lib/src/excluded.dart` is excluded from reporting. The reportable
+      // entry point `lib/pkg.dart` is the only file that imports it. Two
+      // things must hold:
+      //   * the excluded file must NOT be flagged (it is not reportable);
+      //   * the importing reportable file is itself an entry point and
+      //     must NOT be flagged either.
+      final diagnostics = await runRule(
+        {
+          p.join('lib', 'pkg.dart'):
+              "import 'src/excluded.dart';\nint use() => excluded();\n",
+          p.join('lib', 'src', 'excluded.dart'): 'int excluded() => 1;\n',
+        },
+        excluded: {p.join('lib', 'src', 'excluded.dart')},
+      );
+      expect(diagnostics, isEmpty);
+    });
+
+    test(
+      'regression: single-file orphan flagging works when no excludes are configured',
+      () async {
+        // With no excludes, `reportableFilePaths` defaults to the full
+        // analyzed set, and the historical orphan-flagging behavior must be
+        // preserved verbatim.
+        final diagnostics = await runRule({
+          p.join('lib', 'pkg.dart'): '// public surface\n',
+          p.join('lib', 'src', 'orphan.dart'): 'int orphan() => 1;\n',
+        });
+        expect(diagnostics, hasLength(1));
+        expect(
+          diagnostics.single.location.filePath,
+          p.normalize(
+            p.absolute(p.join(tempDir.path, 'lib', 'src', 'orphan.dart')),
+          ),
+        );
+      },
+    );
 
     test(
       'a `part of <uri>` library is reached transitively via its owner',

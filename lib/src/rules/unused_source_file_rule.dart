@@ -108,7 +108,7 @@ class UnusedSourceFileRule implements MultiFileAnalyzerRule {
     }
 
     final diagnostics = <Diagnostic>[];
-    for (final path in analyzed) {
+    for (final path in context.reportableFilePaths) {
       if (entryPoints.contains(path)) continue;
       if (_isGenerated(path)) continue;
       if (reachable.contains(path)) continue;
