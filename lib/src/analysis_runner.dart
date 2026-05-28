@@ -39,12 +39,16 @@ class AnalysisRunner {
   AnalysisRunner({required this.registry, required this.options});
 
   /// Resolves [AnalOptions.includePaths] to a concrete list of `.dart` files,
-  /// drops anything matched by [AnalOptions.excludePaths], parses each file
-  /// through `package:analyzer`, dispatches each enabled rule, and returns
-  /// the accumulated diagnostics.
+  /// partitions them into a reportable subset (everything not matched by
+  /// [AnalOptions.excludePaths]) and a supplementary subset (the files the
+  /// exclude globs filtered out), parses each file in *both* sets through
+  /// `package:analyzer` so cross-file rules can resolve references into
+  /// excluded files, dispatches each enabled single-file rule against
+  /// reportable files only, dispatches each enabled multi-file rule once
+  /// over the combined context, and returns the accumulated diagnostics.
   Future<List<Diagnostic>> run() async {
-    final files = _resolveFiles();
-    if (files.isEmpty) return <Diagnostic>[];
+    final (reportable, supplementary) = _resolveFiles();
+    if (reportable.isEmpty) return <Diagnostic>[];
 
     final enabled = options.enabledRuleIds;
     final rules = <AnalyzerRule>[
@@ -57,14 +61,17 @@ class AnalysisRunner {
         if (enabled.isEmpty || enabled.contains(rule.id)) rule,
     ];
 
+    final allPaths = <String>[...reportable, ...supplementary]..sort();
+    final reportableSet = reportable.toSet();
     final collection = AnalysisContextCollection(
-      includedPaths: files,
+      includedPaths: allPaths,
       sdkPath: _resolveSdkPath(),
     );
     final diagnostics = <Diagnostic>[];
     final resolvedUnits = <ResolvedUnitResult>[];
 
-    for (final file in files) {
+    for (final file in allPaths) {
+      final isReportable = reportableSet.contains(file);
       try {
         final context = collection.contextFor(file);
         final unitResult = await context.currentSession.getResolvedUnit(file);
@@ -78,6 +85,7 @@ class AnalysisRunner {
           continue;
         }
         resolvedUnits.add(unitResult);
+        if (!isReportable) continue;
         final ruleContext = AnalysisContext(unit: unitResult, filePath: file);
         for (final rule in rules) {
           try {
@@ -97,11 +105,13 @@ class AnalysisRunner {
     }
 
     if (multiFileRules.isNotEmpty) {
+      final analyzedFilePaths = <String>{
+        for (final unit in resolvedUnits) unit.path,
+      };
       final multiFileContext = MultiFileAnalysisContext(
         units: resolvedUnits,
-        analyzedFilePaths: <String>{
-          for (final unit in resolvedUnits) unit.path,
-        },
+        analyzedFilePaths: analyzedFilePaths,
+        reportableFilePaths: reportableSet.intersection(analyzedFilePaths),
       );
       for (final rule in multiFileRules) {
         try {
@@ -120,7 +130,19 @@ class AnalysisRunner {
     return diagnostics;
   }
 
-  List<String> _resolveFiles() {
+  /// Returns the absolute, normalized `.dart` paths discovered under
+  /// [AnalOptions.includePaths], partitioned into:
+  ///
+  /// * `reportable` — files that survived the [AnalOptions.excludePaths]
+  ///   globs and are therefore eligible for single-file rule dispatch and
+  ///   diagnostic emission, and
+  /// * `supplementary` — files the exclude globs filtered out. The frame
+  ///   still parses/resolves these so cross-file rules can follow
+  ///   references into them, but they are not dispatched against directly
+  ///   and may not receive diagnostics.
+  ///
+  /// Both lists are sorted for deterministic ordering.
+  (List<String>, List<String>) _resolveFiles() {
     final excludeGlobs = <_ExcludeGlob>[
       for (final pattern in options.excludePaths)
         _ExcludeGlob(_toPosix(pattern)),
@@ -153,11 +175,18 @@ class AnalysisRunner {
       }
     }
 
-    final filtered = <String>[
-      for (final file in found)
-        if (!_isExcluded(file, excludeGlobs)) file,
-    ]..sort();
-    return filtered;
+    final reportable = <String>[];
+    final supplementary = <String>[];
+    for (final file in found) {
+      if (_isExcluded(file, excludeGlobs)) {
+        supplementary.add(file);
+      } else {
+        reportable.add(file);
+      }
+    }
+    reportable.sort();
+    supplementary.sort();
+    return (reportable, supplementary);
   }
 
   bool _isExcluded(String file, List<_ExcludeGlob> globs) {

@@ -80,6 +80,84 @@ void main() {
       expect(context.analyzedFilePaths, <String>{'/abs/a.dart'});
       expect(context.units, isEmpty);
     });
+
+    test('reportableFilePaths defaults to a copy of analyzedFilePaths', () {
+      final context = MultiFileAnalysisContext(
+        units: const <ResolvedUnitResult>[],
+        analyzedFilePaths: <String>{'/abs/a.dart', '/abs/b.dart'},
+      );
+
+      expect(context.reportableFilePaths, <String>{
+        '/abs/a.dart',
+        '/abs/b.dart',
+      });
+      expect(context.reportableFilePaths, context.analyzedFilePaths);
+    });
+
+    test(
+      'reportableFilePaths is honored when explicitly passed as a subset',
+      () {
+        final context = MultiFileAnalysisContext(
+          units: const <ResolvedUnitResult>[],
+          analyzedFilePaths: <String>{
+            '/abs/a.dart',
+            '/abs/b.dart',
+            '/abs/excluded.dart',
+          },
+          reportableFilePaths: <String>{'/abs/a.dart', '/abs/b.dart'},
+        );
+
+        expect(context.analyzedFilePaths, <String>{
+          '/abs/a.dart',
+          '/abs/b.dart',
+          '/abs/excluded.dart',
+        });
+        expect(context.reportableFilePaths, <String>{
+          '/abs/a.dart',
+          '/abs/b.dart',
+        });
+      },
+    );
+
+    test('wraps reportableFilePaths in an unmodifiable set', () {
+      final context = MultiFileAnalysisContext(
+        units: const <ResolvedUnitResult>[],
+        analyzedFilePaths: <String>{'/abs/a.dart'},
+        reportableFilePaths: <String>{'/abs/a.dart'},
+      );
+
+      expect(
+        () => context.reportableFilePaths.add('/abs/b.dart'),
+        throwsUnsupportedError,
+      );
+    });
+
+    test('reportableFilePaths default does not observe later mutations of '
+        'analyzedFilePaths', () {
+      final paths = <String>{'/abs/a.dart'};
+      final context = MultiFileAnalysisContext(
+        units: const <ResolvedUnitResult>[],
+        analyzedFilePaths: paths,
+      );
+
+      paths.add('/abs/b.dart');
+
+      expect(context.reportableFilePaths, <String>{'/abs/a.dart'});
+    });
+
+    test('reportableFilePaths does not observe later mutations of the explicit '
+        'input', () {
+      final reportable = <String>{'/abs/a.dart'};
+      final context = MultiFileAnalysisContext(
+        units: const <ResolvedUnitResult>[],
+        analyzedFilePaths: <String>{'/abs/a.dart', '/abs/b.dart'},
+        reportableFilePaths: reportable,
+      );
+
+      reportable.add('/abs/b.dart');
+
+      expect(context.reportableFilePaths, <String>{'/abs/a.dart'});
+    });
   });
 
   group('MultiFileAnalyzerRule', () {

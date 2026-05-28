@@ -345,6 +345,81 @@ void main() {
         expect(diagnostics, isEmpty);
       },
     );
+
+    test('references from non-reportable units still count toward usage of '
+        'reportable candidates', () async {
+      final reportableRelative = p.join('lib', 'src', 'reportable.dart');
+      final excludedRelative = p.join('lib', 'src', 'excluded.dart');
+
+      final reportableFile = File(p.join(tempDir.path, reportableRelative));
+      reportableFile.parent.createSync(recursive: true);
+      reportableFile.writeAsStringSync('void candidateFromExcluded() {}\n');
+
+      final excludedFile = File(p.join(tempDir.path, excludedRelative));
+      excludedFile.parent.createSync(recursive: true);
+      excludedFile.writeAsStringSync(
+        "import 'reportable.dart';\n"
+        'void main() { candidateFromExcluded(); }\n',
+      );
+
+      final reportablePath = p.normalize(p.absolute(reportableFile.path));
+      final excludedPath = p.normalize(p.absolute(excludedFile.path));
+      final allPaths = <String>[reportablePath, excludedPath]..sort();
+
+      final collection = AnalysisContextCollection(
+        includedPaths: allPaths,
+        sdkPath: _resolveSdkPath(),
+      );
+      final units = <ResolvedUnitResult>[];
+      for (final path in allPaths) {
+        final session = collection.contextFor(path).currentSession;
+        final result = await session.getResolvedUnit(path);
+        expect(result, isA<ResolvedUnitResult>());
+        units.add(result as ResolvedUnitResult);
+      }
+
+      final context = MultiFileAnalysisContext(
+        units: units,
+        analyzedFilePaths: <String>{reportablePath, excludedPath},
+        reportableFilePaths: <String>{reportablePath},
+      );
+
+      final diagnostics = const UnusedFunctionRule().analyze(context).toList();
+      expect(diagnostics, isEmpty);
+    });
+
+    test(
+      'candidates declared in non-reportable units are never flagged',
+      () async {
+        final excludedRelative = p.join('lib', 'src', 'excluded.dart');
+
+        final excludedFile = File(p.join(tempDir.path, excludedRelative));
+        excludedFile.parent.createSync(recursive: true);
+        excludedFile.writeAsStringSync('void unusedInExcluded() {}\n');
+
+        final excludedPath = p.normalize(p.absolute(excludedFile.path));
+
+        final collection = AnalysisContextCollection(
+          includedPaths: <String>[excludedPath],
+          sdkPath: _resolveSdkPath(),
+        );
+        final session = collection.contextFor(excludedPath).currentSession;
+        final result = await session.getResolvedUnit(excludedPath);
+        expect(result, isA<ResolvedUnitResult>());
+        final unit = result as ResolvedUnitResult;
+
+        final context = MultiFileAnalysisContext(
+          units: <ResolvedUnitResult>[unit],
+          analyzedFilePaths: <String>{excludedPath},
+          reportableFilePaths: const <String>{},
+        );
+
+        final diagnostics = const UnusedFunctionRule()
+            .analyze(context)
+            .toList();
+        expect(diagnostics, isEmpty);
+      },
+    );
   });
 }
 

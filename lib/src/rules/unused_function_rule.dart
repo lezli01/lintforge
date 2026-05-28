@@ -189,6 +189,7 @@ class UnusedFunctionRule implements MultiFileAnalyzerRule {
 
     final diagnostics = <Diagnostic>[];
     for (final unit in context.units) {
+      if (!context.reportableFilePaths.contains(unit.path)) continue;
       if (_unitIsGeneratedTypeLintIgnored(unit.unit)) continue;
       final skipMemberCandidates = _unitImportsDartMirrors(unit.unit);
       for (final collector in collectors) {

@@ -15,13 +15,21 @@ samples/all_rules/
   pubspec.yaml                       # path-dependent on the root `anal` package
   bin/
     main.dart                        # bin/ entry point — always reachable
+    dev_tool.g.dart                  # excluded via `--exclude '*.g.dart'`; parsed
+                                     # but NOT reportable. Its `import` of
+                                     # `lib/src/kept_alive_by_excluded.dart`
+                                     # contributes the ONLY reachability edge
+                                     # keeping that file alive
   lib/
     all_rules_sample.dart            # lib/<package>.dart entry point
     unused_function_demo.dart        # positive + negative cases for unused_function
     unused_class_demo.dart           # positive + negative cases for unused_class
     src/
       internals.dart                 # public-top-level positive for unused_function
-                                     # (`lib/src/` is the package's internal surface)
+                                     # (`lib/src/` is the package's internal surface);
+                                     # also declares `keptAliveByExcludedRef`, the
+                                     # function referenced from the excluded
+                                     # `refs.g.dart` (N20)
       mirrors_user.dart              # `dart:mirrors`-importing companion — every
                                      # member declared here is exempt from
                                      # unused_function under the mirrors assumption
@@ -44,6 +52,13 @@ samples/all_rules/
       _io_impl.dart                  # reached via `if (dart.library.io)` configuration
       _web_impl.dart                 # reached via `if (dart.library.html)` configuration
       deferred_target.dart           # reached via `import ... deferred as ...`
+      refs.g.dart                    # excluded via `--exclude '*.g.dart'`; parsed
+                                     # but NOT reportable. Calls
+                                     # `keptAliveByExcludedRef` so the cross-file
+                                     # rule's global reference set still sees that
+                                     # use (unused_function N20)
+      kept_alive_by_excluded.dart    # reached ONLY through the excluded
+                                     # `bin/dev_tool.g.dart` importer (unused_source_file)
       orphan.dart                    # never imported — UNREACHABLE
 ```
 
@@ -53,12 +68,21 @@ From the repository root:
 
 ```sh
 fvm dart pub get --directory samples/all_rules
-fvm dart run anal samples/all_rules
+fvm dart run anal --exclude '*.g.dart' samples/all_rules
 ```
 
 The runner analyses both `lib/` and `bin/` so that the `bin/main.dart`
 entry-point negative for `unused_source_file` is exercised alongside the
 `lib/` cases.
+
+The `--exclude '*.g.dart'` flag filters `lib/src/refs.g.dart` and
+`bin/dev_tool.g.dart` out of the *reportable* set so their own
+declarations are never flagged, while the frame still parses them so
+their references — the call to `keptAliveByExcludedRef` from
+`refs.g.dart` and the `import` of `lib/src/kept_alive_by_excluded.dart`
+from `dev_tool.g.dart` — flow into the cross-file rules' global
+reference and reachability graphs. See `unused_function` N20 and the
+`unused_source_file` table below.
 
 ## Expected output
 
@@ -75,15 +99,15 @@ samples/all_rules/lib/unused_class_demo.dart:24:16 • [warning] unused_class: T
 samples/all_rules/lib/unused_function_demo.dart:29:6 • [warning] unused_function: The top-level function "_unusedPrivateTopLevel" is declared but never used.
 samples/all_rules/lib/unused_function_demo.dart:32:9 • [warning] unused_function: The top-level getter "_unusedTopLevelGetter" is declared but never used.
 samples/all_rules/lib/unused_function_demo.dart:35:5 • [warning] unused_function: The top-level setter "_unusedTopLevelSetter" is declared but never used.
-samples/all_rules/lib/unused_function_demo.dart:189:8 • [warning] unused_function: The method "_unusedPrivateMethod" is declared but never used.
-samples/all_rules/lib/unused_function_demo.dart:192:15 • [warning] unused_function: The static method "unusedStaticMethod" is declared but never used.
-samples/all_rules/lib/unused_function_demo.dart:195:11 • [warning] unused_function: The getter "unusedGetter" is declared but never used.
-samples/all_rules/lib/unused_function_demo.dart:198:7 • [warning] unused_function: The setter "unusedSetter" is declared but never used.
-samples/all_rules/lib/unused_function_demo.dart:201:20 • [warning] unused_function: The operator "-" is declared but never used.
-samples/all_rules/lib/unused_function_demo.dart:208:10 • [warning] unused_function: The local function "unusedLocal" is declared but never used.
-samples/all_rules/lib/unused_function_demo.dart:262:10 • [warning] unused_function: The extension method "unusedExtension" is declared but never used.
-samples/all_rules/lib/unused_function_demo.dart:318:8 • [warning] unused_function: The method "overrideButUnreachable" is declared but never used.
-samples/all_rules/lib/unused_function_demo.dart:339:7 • [warning] unused_function: The method "foo" is declared but never used.
+samples/all_rules/lib/unused_function_demo.dart:207:8 • [warning] unused_function: The method "_unusedPrivateMethod" is declared but never used.
+samples/all_rules/lib/unused_function_demo.dart:210:15 • [warning] unused_function: The static method "unusedStaticMethod" is declared but never used.
+samples/all_rules/lib/unused_function_demo.dart:213:11 • [warning] unused_function: The getter "unusedGetter" is declared but never used.
+samples/all_rules/lib/unused_function_demo.dart:216:7 • [warning] unused_function: The setter "unusedSetter" is declared but never used.
+samples/all_rules/lib/unused_function_demo.dart:219:20 • [warning] unused_function: The operator "-" is declared but never used.
+samples/all_rules/lib/unused_function_demo.dart:226:10 • [warning] unused_function: The local function "unusedLocal" is declared but never used.
+samples/all_rules/lib/unused_function_demo.dart:280:10 • [warning] unused_function: The extension method "unusedExtension" is declared but never used.
+samples/all_rules/lib/unused_function_demo.dart:336:8 • [warning] unused_function: The method "overrideButUnreachable" is declared but never used.
+samples/all_rules/lib/unused_function_demo.dart:357:7 • [warning] unused_function: The method "foo" is declared but never used.
 ```
 
 (Diagnostic ordering depends on the runner's file iteration; the set of
@@ -137,6 +161,7 @@ samples/all_rules/lib/unused_function_demo.dart:339:7 • [warning] unused_funct
 | `N17`| `Box<T>.put` and `Box<T>.peek` called through `IntBox` | Generic-class members invoked through a non-generic subtype resolve to a substituted "member view" of the declared element. Both the candidate set and the global reference set are projected through `Element.baseElement` so the declared member matches the call site. |
 | `N18`| `Holder<int>.value(0)`                       | Factory constructor on a generic sealed class invoked with an explicit type argument resolves to a substituted view of the declared constructor; the same `baseElement` projection lets the declared factory match the call site. |
 | `N19`| `A.new` reached through `B`'s `super.x` forwarding (`class B extends A { const B({super.x}); }` plus `const B(x: 1)`) | Super-parameter forwarding (Dart 2.17+) produces no `SuperConstructorInvocation` AST node — the forwarding is expressed only through the `super.x` parameter. The rule reads the implicit super-constructor target off the constructor element and records it as a use, so `A`'s constructor must NOT be flagged. The same hook covers `class X extends Y {}` with a synthetic default constructor that implicitly invokes `Y.new`. |
+| `N20`| `keptAliveByExcludedRef` in `lib/src/internals.dart` is referenced only from the excluded `lib/src/refs.g.dart` (the runner is invoked with `--exclude '*.g.dart'`) | Excluded files are filtered out of the *reportable* set but still parsed by the frame, so their references flow into the cross-file rule's global reference set. The call in `refs.g.dart` keeps `keptAliveByExcludedRef` alive — without the excluded-files-as-references behavior, this public top-level function in `lib/src/` would be a P11-shaped positive. The excluded file's own private members (e.g. `_refUsage`) are likewise not flagged because the file is not in `reportableFilePaths`. |
 
 Each positive case has a used twin that exercises the negative path for the
 same kind:
@@ -173,6 +198,7 @@ same kind:
 | File                              | Why the rule skips it                                                                  |
 | --------------------------------- | -------------------------------------------------------------------------------------- |
 | `bin/main.dart`                   | `bin/` entry point — always reachable.                                                 |
+| `bin/dev_tool.g.dart`             | not flagged — excluded via `--exclude '*.g.dart'`, so the file is not in the *reportable* set. The frame still parses it, so its `import` of `lib/src/kept_alive_by_excluded.dart` contributes a reachability edge that keeps that file alive. |
 | `lib/all_rules_sample.dart`       | sits directly under `lib/`, so the rule treats it as an entry point.                   |
 | `lib/unused_function_demo.dart`   | sits directly under `lib/` — entry point.                                              |
 | `lib/unused_class_demo.dart`      | sits directly under `lib/` — entry point.                                              |
@@ -188,3 +214,4 @@ same kind:
 | `lib/src/_io_impl.dart`           | reached from `conditional_hub.dart` via the `if (dart.library.io)` configuration of a conditional import — every `if (...)` configuration contributes a reachability edge regardless of the active platform. |
 | `lib/src/_web_impl.dart`          | reached from `conditional_hub.dart` via the `if (dart.library.html)` configuration of the same conditional import. |
 | `lib/src/deferred_target.dart`    | reached from `conditional_hub.dart` via `import ... deferred as ...`; deferred imports contribute the same reachability edge as ordinary imports. |
+| `lib/src/kept_alive_by_excluded.dart` | not flagged — reachable ONLY through the excluded `bin/dev_tool.g.dart` importer. Excluded files are still parsed by the frame, so the import edge keeps this file alive even though the importer itself is not in the reportable set. |

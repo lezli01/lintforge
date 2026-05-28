@@ -368,4 +368,87 @@ void main() {
       },
     );
   });
+
+  group('AnalysisRunner excluded-as-reference dispatch', () {
+    late Directory tempDir;
+
+    setUp(() {
+      tempDir = Directory.systemTemp.createTempSync(
+        'anal_runner_excluded_ref_',
+      );
+    });
+
+    tearDown(() {
+      if (tempDir.existsSync()) {
+        tempDir.deleteSync(recursive: true);
+      }
+    });
+
+    String writeFile(String name, [String contents = 'void main() {}\n']) {
+      final file = File(p.join(tempDir.path, name));
+      file.parent.createSync(recursive: true);
+      file.writeAsStringSync(contents);
+      return p.normalize(p.absolute(file.path));
+    }
+
+    test('excluded files do not receive single-file rule dispatch but are '
+        'still visible in the multi-file context', () async {
+      final keep = writeFile('keep.dart');
+      final excluded = writeFile('thing.g.dart');
+      final callLog = <String>[];
+      final multi = _CapturingMultiFileRule();
+      final registry = RuleRegistry()
+        ..register(_OrderTrackingRule(callLog))
+        ..registerMultiFile(multi);
+      final runner = AnalysisRunner(
+        registry: registry,
+        options: AnalOptions(
+          includePaths: [tempDir.path],
+          excludePaths: const ['*.g.dart'],
+          enabledRuleIds: const <String>{},
+        ),
+      );
+
+      await runner.run();
+
+      expect(callLog, <String>['single:$keep']);
+      expect(multi.callCount, 1);
+      expect(multi.lastContext, isNotNull);
+      expect(
+        multi.lastContext!.units.map((unit) => unit.path).toSet(),
+        <String>{keep, excluded},
+      );
+      expect(multi.lastContext!.analyzedFilePaths, <String>{keep, excluded});
+      expect(multi.lastContext!.reportableFilePaths, <String>{keep});
+    });
+
+    test(
+      'with no excludes reportableFilePaths equals analyzedFilePaths',
+      () async {
+        final a = writeFile('a.dart');
+        final b = writeFile('b.dart');
+        final multi = _CapturingMultiFileRule();
+        final registry = RuleRegistry()..registerMultiFile(multi);
+        final runner = AnalysisRunner(
+          registry: registry,
+          options: AnalOptions(
+            includePaths: [tempDir.path],
+            excludePaths: const [],
+            enabledRuleIds: const <String>{},
+          ),
+        );
+
+        await runner.run();
+
+        expect(multi.callCount, 1);
+        expect(multi.lastContext, isNotNull);
+        expect(multi.lastContext!.analyzedFilePaths, <String>{a, b});
+        expect(multi.lastContext!.reportableFilePaths, <String>{a, b});
+        expect(
+          multi.lastContext!.reportableFilePaths,
+          multi.lastContext!.analyzedFilePaths,
+        );
+      },
+    );
+  });
 }
