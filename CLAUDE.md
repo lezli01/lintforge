@@ -2,6 +2,8 @@
 
 Guidance for Claude Code (and other AI assistants) when working in this repository.
 
+Check @LANGUAGE.md for Dart specific knowledge.
+
 ## Project Overview
 
 `anal` is an **open-source Dart / Flutter package** providing **static code analysis** tooling. It is intended to be consumed by other Dart and Flutter projects (typically as a `dev_dependency`) to enforce code quality, lint rules, and analyzer configuration.
