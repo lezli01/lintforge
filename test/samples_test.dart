@@ -14,11 +14,35 @@ import 'package:path/path.dart' as p;
 /// This fixture doubles as a machine-checked summary of each sample's
 /// README "Expected diagnostics" section — keep them in sync.
 const Map<String, List<(String, String)>> _expectedDiagnostics = {
-  // samples/unused_function: README documents eleven unused_function
-  // diagnostics — one in lib/src/internals.dart (P11) and ten in
-  // lib/unused_function_sample.dart (P1..P10).
+  // samples/unused_function: README documents thirteen unused_function
+  // diagnostics — one in lib/src/internals.dart (P11) and twelve in
+  // lib/unused_function_sample.dart (P1..P10 plus P12, the override-of-
+  // unreferenced-supertype-member positive case, plus P13, the
+  // noSuchMethod-walk positive control on NoSuchMethodTarget.foo). The
+  // sample also covers the generic-member identity normalisation
+  // through the N17 / N18 negative cases (`Box<T>.put` / `Box<T>.peek`
+  // called through `IntBox`, and `Holder<int>.value(0)` invoking a
+  // generic sealed-class factory) — both MUST NOT be flagged because
+  // candidate and reference elements are projected to their declared
+  // base form. N19 exercises super-parameter forwarding (`class B
+  // extends A { const B({super.x}); }` plus `const B(x: 1)`): the
+  // implicit super-constructor invocation is recorded as a use of
+  // `A.new`, so `A`'s constructor MUST NOT be flagged. N20 exercises
+  // parameterised enums (`enum Route { home('/'), settings('/settings');
+  // const Route(this.path); final String path; }` plus a read of
+  // `Route.home.path`): each enum-value declaration invokes the enum's
+  // constructor through `EnumConstantDeclaration.constructorElement`,
+  // which the rule's `visitEnumConstantDeclaration` hook records as a
+  // use — so `Route`'s constructor MUST NOT be flagged. The companion
+  // lib/src/l10n/l10n.dart and lib/src/l10n/l10n_en.dart mock the
+  // output of `flutter gen-l10n` and are stamped with the de-facto
+  // generated-code marker `// ignore_for_file: type=lint`; every
+  // candidate in those units is exempt from the rule, so they MUST
+  // NOT contribute any diagnostics.
   'unused_function': [
     ('unused_function', 'lib/src/internals.dart'),
+    ('unused_function', 'lib/unused_function_sample.dart'),
+    ('unused_function', 'lib/unused_function_sample.dart'),
     ('unused_function', 'lib/unused_function_sample.dart'),
     ('unused_function', 'lib/unused_function_sample.dart'),
     ('unused_function', 'lib/unused_function_sample.dart'),
@@ -45,14 +69,27 @@ const Map<String, List<(String, String)>> _expectedDiagnostics = {
   // ordinary import, `part`, every `if (...)` configuration of a conditional
   // import, and a deferred import respectively — and must NOT be flagged.
   'unused_source_file': [('unused_source_file', 'lib/src/orphan.dart')],
-  // samples/all_rules: README documents sixteen diagnostics across all three
-  // built-in rules — eleven unused_function (P11 in lib/src/internals.dart and
-  // P1..P10 in lib/unused_function_demo.dart), four unused_class (P1..P4 in
+  // samples/all_rules: README documents eighteen diagnostics across all three
+  // built-in rules — thirteen unused_function (P11 in lib/src/internals.dart and
+  // P1..P10 plus the override-of-unreferenced-supertype P12 and the
+  // noSuchMethod-walk positive control P13 in
+  // lib/unused_function_demo.dart), four unused_class (P1..P4 in
   // lib/unused_class_demo.dart), and one unused_source_file (lib/src/orphan.dart).
   // The combined sample also exercises the per-rule feature-aware negative cases:
   // object patterns, record literals + record patterns, cascades, callable-object
-  // `.call`, and the `noSuchMethod` / `dart:mirrors` exemptions for unused_function
-  // (lib/unused_function_demo.dart and lib/src/mirrors_user.dart); object patterns,
+  // `.call`, the `noSuchMethod` / `dart:mirrors` exemptions, the
+  // generic-member identity normalisation (calls into `Box<T>` through a
+  // non-generic subtype and a generic sealed-class factory),
+  // super-parameter forwarding (`class B extends A { const B({super.x}); }`
+  // plus `const B(x: 1)` — the implicit super-constructor invocation
+  // keeps `A.new` referenced), parameterised enums (`enum Route {
+  // home('/'), settings('/settings'); const Route(this.path); final String
+  // path; }` plus a read of `Route.home.path` — each enum-value declaration
+  // invokes `Route`'s constructor through
+  // `EnumConstantDeclaration.constructorElement`), and the
+  // `// ignore_for_file: type=lint` generated-code marker exemption for
+  // unused_function (lib/unused_function_demo.dart, lib/src/mirrors_user.dart, and
+  // lib/src/l10n/l10n.dart + lib/src/l10n/l10n_en.dart); object patterns,
   // record type annotations, and sealed-class pattern matching for unused_class
   // (lib/unused_class_demo.dart); and conditional + deferred imports for
   // unused_source_file (lib/src/conditional_hub.dart, lib/src/_io_impl.dart,
@@ -60,6 +97,8 @@ const Map<String, List<(String, String)>> _expectedDiagnostics = {
   // cases must NOT be flagged.
   'all_rules': [
     ('unused_function', 'lib/src/internals.dart'),
+    ('unused_function', 'lib/unused_function_demo.dart'),
+    ('unused_function', 'lib/unused_function_demo.dart'),
     ('unused_function', 'lib/unused_function_demo.dart'),
     ('unused_function', 'lib/unused_function_demo.dart'),
     ('unused_function', 'lib/unused_function_demo.dart'),

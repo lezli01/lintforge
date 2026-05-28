@@ -11,11 +11,16 @@ part of '../unused_function_rule.dart';
 ///
 /// A constructor is exempt when it is `external` or carries
 /// `@pragma('vm:entry-point')`. The collector additionally skips every
-/// constructor on a class that declares its own `noSuchMethod`,
-/// because such a class can intercept any otherwise-missing call by
-/// name and the rule cannot tell whether a constructor is truly unused
-/// or invoked through reflection / dynamic dispatch on its enclosing
-/// type.
+/// constructor on a class or enum when the enclosing declaration — or
+/// any class / mixin / interface reached through `extends`, `with`,
+/// `implements`, or mixin `on` clauses — declares its own
+/// `noSuchMethod`, because such a type can intercept any
+/// otherwise-missing call by name and the rule cannot tell whether a
+/// constructor is truly unused or invoked through reflection / dynamic
+/// dispatch on its enclosing type. The walk also recognises mocktail's
+/// `Fake` and `Mock` base classes by simple name, since the analyzed
+/// sources typically do not pull in `package:mocktail` as a resolved
+/// dependency. See [_enclosingDeclaresNoSuchMethod].
 ///
 /// To avoid duplicate noise with `unused_class`, the rule's dispatch
 /// site additionally skips a constructor candidate when its enclosing
@@ -31,7 +36,10 @@ class _ConstructorCollector implements _UnusedFunctionCandidateCollector {
   const _ConstructorCollector();
 
   @override
-  Iterable<_Candidate> collect(ResolvedUnitResult unit) sync* {
+  Iterable<_Candidate> collect(
+    ResolvedUnitResult unit,
+    _CollectorContext context,
+  ) sync* {
     for (final declaration in unit.unit.declarations) {
       if (declaration is ClassDeclaration) {
         // `ClassDeclaration.namePart` requires the experimental
@@ -47,7 +55,10 @@ class _ConstructorCollector implements _UnusedFunctionCandidateCollector {
         // across the supported analyzer range.
         // ignore: deprecated_member_use
         final members = declaration.members;
-        if (_membersDeclareNoSuchMethod(members)) continue;
+        final enclosing = declaration.declaredFragment?.element;
+        if (enclosing != null && _enclosingDeclaresNoSuchMethod(enclosing)) {
+          continue;
+        }
         for (final member in members) {
           if (member is! ConstructorDeclaration) continue;
           final candidate = _candidateFor(member, classNameToken);
@@ -63,7 +74,10 @@ class _ConstructorCollector implements _UnusedFunctionCandidateCollector {
         // preferred over the deprecation's suggested `body` accessor.
         // ignore: deprecated_member_use
         final members = declaration.members;
-        if (_membersDeclareNoSuchMethod(members)) continue;
+        final enclosing = declaration.declaredFragment?.element;
+        if (enclosing != null && _enclosingDeclaresNoSuchMethod(enclosing)) {
+          continue;
+        }
         for (final member in members) {
           if (member is! ConstructorDeclaration) continue;
           final candidate = _candidateFor(member, enumNameToken);
@@ -84,7 +98,7 @@ class _ConstructorCollector implements _UnusedFunctionCandidateCollector {
     final nameToken = declaration.name ?? classNameToken;
     return _Candidate(
       nameToken: nameToken,
-      element: element,
+      element: _declaredElement(element),
       kindLabel: 'constructor',
     );
   }

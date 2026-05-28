@@ -15,7 +15,10 @@ class _LocalFunctionCollector implements _UnusedFunctionCandidateCollector {
   const _LocalFunctionCollector();
 
   @override
-  Iterable<_Candidate> collect(ResolvedUnitResult unit) {
+  Iterable<_Candidate> collect(
+    ResolvedUnitResult unit,
+    _CollectorContext context,
+  ) {
     final candidates = <_Candidate>[];
     unit.unit.accept(_LocalFunctionVisitor(candidates));
     return candidates;
@@ -36,7 +39,7 @@ class _LocalFunctionVisitor extends RecursiveAstVisitor<void> {
         sink.add(
           _Candidate(
             nameToken: declaration.name,
-            element: element,
+            element: _declaredElement(element),
             kindLabel: 'local function',
           ),
         );

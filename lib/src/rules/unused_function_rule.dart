@@ -54,7 +54,18 @@ part 'unused_function/top_level_function_collector.dart';
 /// the resolved element of every reference-bearing AST node — including
 /// tear-offs, named-type references, constructor invocations and
 /// redirects, operator and index expressions, explicit member accesses,
-/// and setter writes.
+/// setter writes, the constructor invoked by each enum-value
+/// declaration (parameterised enums like
+/// `enum Route { home('/'); const Route(this.path); }` call the
+/// constructor once per declared value but produce no
+/// [InstanceCreationExpression] / [ConstructorName] AST node — the
+/// reference is only reachable via
+/// [EnumConstantDeclaration.constructorElement]), and the *implicit*
+/// super-constructor target of every generative subclass constructor
+/// (super-parameter forwarding, `B({super.x})`, produces no
+/// [SuperConstructorInvocation] node but still chains to the supertype
+/// at runtime; classes that declare no constructors of their own also
+/// get a synthetic default constructor that implicitly invokes super).
 ///
 /// The rule deliberately ignores the library's `main` entry point,
 /// public top-level functions / getters / setters declared outside
@@ -73,17 +84,44 @@ part 'unused_function/top_level_function_collector.dart';
 /// Additional dispatch-site exemptions cover language features that
 /// can reach members through reflection or dynamic dispatch:
 ///
+/// * **Overrides of reachable supertype members.** When a
+///   [MethodDeclaration] carries an `@override` annotation and the
+///   inherited supertype member is either declared outside the
+///   analyzed unit set (e.g. `dart:*`, `package:flutter`, any package
+///   that did not make it into the [MultiFileAnalysisContext]) or is
+///   itself present in the global reference set, the rule treats the
+///   override as a "use" of the candidate. This catches framework
+///   callback overrides (`State.build`, `Widget.createElement`, etc.)
+///   as well as in-repo abstract base / concrete subtype dispatch where
+///   the base member is statically referenced. The check uses
+///   [InterfaceElement.getInheritedMember] to resolve the overridden
+///   member, so equivalent reasoning applies uniformly to methods,
+///   operators, getters, and setters.
 /// * **`noSuchMethod`-declaring classes/mixins.** When the enclosing
-///   class or mixin declares its own `noSuchMethod`, every undefined
-///   call lands in `noSuchMethod` rather than a "no such method"
-///   error, so any member name might legitimately be invoked
-///   dynamically. The rule skips member and constructor candidates of
-///   such enclosing declarations to avoid false positives.
+///   class or mixin — or any of its supertypes reached through
+///   `extends`, `with`, `implements`, or mixin `on` clauses — declares
+///   its own `noSuchMethod`, every undefined call lands in
+///   `noSuchMethod` rather than a "no such method" error, so any
+///   member name might legitimately be invoked dynamically. The rule
+///   skips member and constructor candidates of such enclosing
+///   declarations to avoid false positives. Because the analyzed
+///   sources typically do not pull in `package:mocktail`, any
+///   supertype whose simple name is `Fake` or `Mock` is treated as a
+///   `noSuchMethod`-declaring ancestor regardless of whether its body
+///   is visible.
 /// * **Libraries that import `dart:mirrors`.** The `dart:mirrors`
 ///   library can invoke arbitrary methods by name at runtime, so any
 ///   member of an analyzed library that imports `dart:mirrors` is
 ///   treated as potentially used. The rule skips member and
 ///   constructor candidates declared in such libraries.
+/// * **Units stamped with the generated-code marker
+///   `// ignore_for_file: type=lint`.** Build-time codegen tools —
+///   most prominently Flutter's `gen_l10n` for `output-localization-file`
+///   output — stamp this line comment at the top of every file they
+///   emit to tell the SDK analyzer to suppress all lints on the
+///   generated code. The rule treats the marker as a "this file is
+///   generated, do not flag" signal and skips every candidate
+///   collector for the unit.
 ///
 /// **Features that flow through existing visitors with no extra
 /// handling.** The following language features do not need
@@ -144,15 +182,21 @@ class UnusedFunctionRule implements MultiFileAnalyzerRule {
       _ClassMemberCollector,
     };
 
+    final collectorContext = _CollectorContext(
+      globalReferences: globalReferences,
+      analyzedFilePaths: context.analyzedFilePaths,
+    );
+
     final diagnostics = <Diagnostic>[];
     for (final unit in context.units) {
+      if (_unitIsGeneratedTypeLintIgnored(unit.unit)) continue;
       final skipMemberCandidates = _unitImportsDartMirrors(unit.unit);
       for (final collector in collectors) {
         if (skipMemberCandidates &&
             memberCollectors.contains(collector.runtimeType)) {
           continue;
         }
-        for (final candidate in collector.collect(unit)) {
+        for (final candidate in collector.collect(unit, collectorContext)) {
           if (globalReferences.contains(candidate.element)) continue;
           if (_enclosingClassIsUnflaggedUnreferencedPrivate(
             candidate.element,
@@ -259,21 +303,186 @@ bool _unitImportsDartMirrors(CompilationUnit unit) {
   return false;
 }
 
-/// Whether [members] contains a `noSuchMethod` method declaration.
+/// Whether [unit] is stamped with a generated-code marker at the top
+/// of the file: a `// ignore_for_file: …, type=lint, …` line comment
+/// preceding the file's first directive or declaration.
+///
+/// Build-time Dart codegen tools — most prominently Flutter's
+/// `gen_l10n` for the synthetic `L` base class and per-locale
+/// subclasses it emits under `output-localization-file` — stamp this
+/// marker into every file they emit to tell the SDK analyzer to
+/// suppress all lints on the generated code. The dispatch site treats
+/// the marker as a "this file is generated, do not flag" signal and
+/// skips every candidate collector for the unit: generated
+/// localization output is a translation surface keyed off ARB
+/// resources, and the rule has no business reporting any of its
+/// declarations as unused.
+bool _unitIsGeneratedTypeLintIgnored(CompilationUnit unit) {
+  CommentToken? comment = unit.beginToken.precedingComments;
+  while (comment != null) {
+    if (_isTypeLintIgnoreForFile(comment.lexeme)) return true;
+    comment = comment.next as CommentToken?;
+  }
+  return false;
+}
+
+/// Whether [lexeme] is a line comment of the form
+/// `// ignore_for_file: …, type=lint, …` — i.e. a Dart `ignore_for_file`
+/// directive whose comma-separated code list contains `type=lint`.
+///
+/// `flutter gen-l10n` emits exactly `// ignore_for_file: type=lint`, but
+/// any superset of codes (e.g. `// ignore_for_file: type=lint,
+/// unused_field`) still identifies the file as generated for the
+/// rule's purposes.
+bool _isTypeLintIgnoreForFile(String lexeme) {
+  if (!lexeme.startsWith('//')) return false;
+  final body = lexeme.substring(2).trim();
+  const prefix = 'ignore_for_file:';
+  if (!body.startsWith(prefix)) return false;
+  for (final code in body.substring(prefix.length).split(',')) {
+    if (code.trim() == 'type=lint') return true;
+  }
+  return false;
+}
+
+/// Whether [element] participates in a `noSuchMethod`-based dispatch
+/// scheme — i.e. it itself declares an override of `noSuchMethod`, or
+/// any class / mixin / interface reachable through `extends`, `with`,
+/// `implements`, or mixin `on` clauses does.
 ///
 /// A class or mixin that overrides `noSuchMethod` can intercept any
 /// call that would otherwise be a "no such method" error, so the rule
 /// cannot tell whether a member is truly unused or routed through
-/// `noSuchMethod`. Member and constructor collectors use this to skip
-/// candidates declared on such enclosing types.
-bool _membersDeclareNoSuchMethod(Iterable<ClassMember> members) {
-  for (final member in members) {
-    if (member is MethodDeclaration && member.name.lexeme == 'noSuchMethod') {
-      return true;
-    }
+/// `noSuchMethod`. Member and constructor collectors consult this to
+/// skip candidates declared on such enclosing types.
+///
+/// The walk covers the full supertype chain — not just the type's own
+/// AST — because mocktail's idiomatic test double
+/// (`class _FakeViewModel extends Fake implements ViewModel { … }`)
+/// inherits `noSuchMethod` from `Fake` rather than declaring it
+/// directly on the subclass. Because the analyzed sources usually do
+/// not pull in `package:mocktail` as a resolved dependency — the rule
+/// runs on the production code's element model only — the canonical
+/// `Fake` and `Mock` base classes may themselves be unavailable when
+/// iterating supertypes. As a fallback, any supertype whose simple
+/// name is `Fake` or `Mock` is treated as a `noSuchMethod`-declaring
+/// ancestor.
+///
+/// `Object`'s default `noSuchMethod` implementation throws and does NOT
+/// intercept calls, so the walk explicitly skips it.
+bool _enclosingDeclaresNoSuchMethod(InterfaceElement element) {
+  if (_typeOverridesNoSuchMethod(element)) return true;
+  if (_typeIsKnownProxyByName(element)) return true;
+  for (final supertype in element.allSupertypes) {
+    final superElement = supertype.element;
+    if (_typeOverridesNoSuchMethod(superElement)) return true;
+    if (_typeIsKnownProxyByName(superElement)) return true;
   }
   return false;
 }
+
+/// Whether [element] declares its own `noSuchMethod` method.
+///
+/// `Object` is excluded — its default implementation throws and is not
+/// a proxy signal.
+bool _typeOverridesNoSuchMethod(InterfaceElement element) {
+  if (element.name == 'Object') return false;
+  for (final method in element.methods) {
+    if (method.name == 'noSuchMethod') return true;
+  }
+  return false;
+}
+
+/// Whether [element]'s simple name is `Fake` or `Mock` — the canonical
+/// `package:mocktail` base classes whose own source is typically not
+/// part of the analyzed unit set.
+bool _typeIsKnownProxyByName(InterfaceElement element) {
+  final name = element.name;
+  return name == 'Fake' || name == 'Mock';
+}
+
+/// Whether [metadata] contains a bare `@override` annotation.
+///
+/// Used by [_ClassMemberCollector] to decide whether to consult the
+/// `@override`-of-reachable exemption: only annotated declarations are
+/// subject to the supertype-member lookup.
+bool _hasOverrideAnnotation(NodeList<Annotation> metadata) {
+  for (final annotation in metadata) {
+    if (annotation.arguments != null) continue;
+    final identifier = annotation.name;
+    final simpleName = identifier is SimpleIdentifier
+        ? identifier.name
+        : identifier is PrefixedIdentifier
+        ? identifier.identifier.name
+        : '';
+    if (simpleName == 'override') return true;
+  }
+  return false;
+}
+
+/// Whether [declaration]'s `@override` annotation targets a supertype
+/// member that is already reachable in [context].
+///
+/// "Reachable" means either:
+///
+/// * the inherited member is declared outside the analyzed unit set
+///   (e.g. `dart:*`, `package:flutter`, any package that is not part of
+///   the [MultiFileAnalysisContext]) — the rule can never see its
+///   reference sites, so it must conservatively treat the override as a
+///   use; or
+/// * the inherited member is itself present in
+///   [_CollectorContext.globalReferences], i.e. some site in the
+///   analyzed set already references the supertype member by name. The
+///   override services the same dispatch and is therefore reachable
+///   transitively.
+///
+/// The supertype lookup is performed via
+/// [InterfaceElement.getInheritedMember], which uses the inheritance
+/// graph to find the most-specific overridden member. Equivalent
+/// reasoning applies to methods, operators, getters, and setters
+/// because [Name.forElement] encodes setter names with a trailing `=`
+/// and operator names with their canonical token form.
+///
+/// Returns `false` for declarations that do not carry `@override`, that
+/// are not declared inside an [InterfaceElement], or whose inherited
+/// member cannot be resolved.
+bool _overridesReachableSupertypeMember(
+  MethodDeclaration declaration,
+  _CollectorContext context,
+) {
+  if (!_hasOverrideAnnotation(declaration.metadata)) return false;
+  final element = declaration.declaredFragment?.element;
+  if (element == null) return false;
+  final enclosing = element.enclosingElement;
+  if (enclosing is! InterfaceElement) return false;
+  final name = Name.forElement(element);
+  if (name == null) return false;
+  final inherited = enclosing.getInheritedMember(name);
+  if (inherited == null) return false;
+  final inheritedSource =
+      inherited.firstFragment.libraryFragment.source.fullName;
+  if (!context.analyzedFilePaths.contains(inheritedSource)) return true;
+  return context.globalReferences.contains(_declaredElement(inherited));
+}
+
+/// Projects [element] to its declared form — the non-substituted base
+/// element when [element] is a "member view" wrapper produced by the
+/// analyzer for a generic interface with substituted type arguments,
+/// otherwise [element] itself.
+///
+/// When a call site resolves a member through a substituted generic type
+/// (e.g. `IntBox().put(0)` where `IntBox extends Box<int>`), the
+/// resolved element is a `SubstitutedElementImpl` view around the
+/// declared `Box.put` rather than the declared element itself.
+/// `Element.baseElement` collapses that view to the declared element,
+/// and crucially returns the receiver unchanged when no substitution is
+/// in play, so it is safe to call on every element.
+///
+/// Both the global reference set ([_GlobalReferenceCollector._add]) and
+/// the candidate-construction sites in every collector project through
+/// this helper, so `Set<Element>.contains` matches a generic call site
+/// against the declared candidate.
+Element _declaredElement(Element element) => element.baseElement;
 
 bool _hasVmEntryPointPragma(NodeList<Annotation> metadata) {
   for (final annotation in metadata) {
@@ -303,7 +512,35 @@ bool _hasVmEntryPointPragma(NodeList<Annotation> metadata) {
 /// then test against the global reference set.
 abstract class _UnusedFunctionCandidateCollector {
   /// Yields the candidates the implementation discovered in [unit].
-  Iterable<_Candidate> collect(ResolvedUnitResult unit);
+  ///
+  /// [context] gives collectors access to the global reference set and
+  /// the set of analyzed file paths, used by [_ClassMemberCollector] to
+  /// exempt `@override` members whose inherited supertype member is
+  /// either declared outside the analyzed unit set or itself reachable.
+  Iterable<_Candidate> collect(
+    ResolvedUnitResult unit,
+    _CollectorContext context,
+  );
+}
+
+/// Cross-collector context bundle: the global reference set built by
+/// [_GlobalReferenceCollector] and the analyzed-files path set carried
+/// on the [MultiFileAnalysisContext].
+///
+/// Plumbed through every collector's [`collect`][_UnusedFunctionCandidateCollector.collect]
+/// invocation so the `@override`-of-reachable exemption inside
+/// [_ClassMemberCollector] can resolve the inherited supertype member
+/// and decide whether it counts as "reachable" — either because its
+/// declaring source is outside [analyzedFilePaths] or because the
+/// element is present in [globalReferences].
+class _CollectorContext {
+  final Set<Element> globalReferences;
+  final Set<String> analyzedFilePaths;
+
+  const _CollectorContext({
+    required this.globalReferences,
+    required this.analyzedFilePaths,
+  });
 }
 
 /// A declaration the rule may flag if its [element] is not referenced.
@@ -340,7 +577,7 @@ class _GlobalReferenceCollector extends RecursiveAstVisitor<void> {
   _GlobalReferenceCollector(this.sink);
 
   void _add(Element? element) {
-    if (element != null) sink.add(element);
+    if (element != null) sink.add(_declaredElement(element));
   }
 
   @override
@@ -382,8 +619,44 @@ class _GlobalReferenceCollector extends RecursiveAstVisitor<void> {
   }
 
   @override
+  void visitEnumConstantDeclaration(EnumConstantDeclaration node) {
+    // Each enum-value declaration (`home('/')`, `settings('/settings')`,
+    // …) invokes the enum's constructor at const-evaluation time, but
+    // the AST does NOT model that as an [InstanceCreationExpression] /
+    // [ConstructorName] — the call is implicit in the
+    // [EnumConstantDeclaration] node itself and only reachable via
+    // `node.constructorElement`. Without recording it here, a
+    // parameterised enum's `const Foo(this.x)` constructor would never
+    // land in the global reference set even though every declared
+    // value invokes it.
+    _add(node.constructorElement);
+    super.visitEnumConstantDeclaration(node);
+  }
+
+  @override
   void visitConstructorDeclaration(ConstructorDeclaration node) {
     _add(node.redirectedConstructor?.element);
+    // Record the implicit super-constructor target for generative
+    // constructors that do not write an explicit `super(...)` call and
+    // do not redirect to a peer via `: this.other(...)`. Super-parameter
+    // forwarding (`B({super.x})`, Dart 2.17+) produces no
+    // [SuperConstructorInvocation] node, but the runtime still chains
+    // to the supertype constructor — without this hook the supertype
+    // constructor would never land in the global reference set when its
+    // only call sites are super-parameter-forwarding subclasses.
+    // Factory constructors do not chain to super: they either redirect
+    // (`factory X() = Y;`) or build and return an instance directly.
+    if (node.factoryKeyword == null) {
+      final hasExplicitSuper = node.initializers.any(
+        (initializer) => initializer is SuperConstructorInvocation,
+      );
+      final hasThisRedirect = node.initializers.any(
+        (initializer) => initializer is RedirectingConstructorInvocation,
+      );
+      if (!hasExplicitSuper && !hasThisRedirect) {
+        _add(node.declaredFragment?.element.superConstructor);
+      }
+    }
     // Skip the class-name anchor (`typeName`) — declaring a constructor
     // is not a "use" of its enclosing class, and counting it would make
     // every class with at least one declared constructor look
@@ -393,6 +666,26 @@ class _GlobalReferenceCollector extends RecursiveAstVisitor<void> {
     node.initializers.accept(this);
     node.redirectedConstructor?.accept(this);
     node.body.accept(this);
+  }
+
+  @override
+  void visitClassDeclaration(ClassDeclaration node) {
+    // When a class declares no constructors of its own, the analyzer
+    // synthesises a default unnamed constructor whose only job is to
+    // chain to the supertype constructor. The synthetic constructor has
+    // no AST node, so [visitConstructorDeclaration] never fires for it
+    // — record the super-constructor target here so that
+    // `class B extends A {}` counts as a use of `A.new`.
+    // ignore: deprecated_member_use
+    final members = node.members;
+    final hasDeclaredConstructor = members.any(
+      (member) => member is ConstructorDeclaration,
+    );
+    if (!hasDeclaredConstructor) {
+      final unnamed = node.declaredFragment?.element.unnamedConstructor;
+      _add(unnamed?.superConstructor);
+    }
+    super.visitClassDeclaration(node);
   }
 
   @override

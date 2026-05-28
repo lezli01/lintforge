@@ -108,6 +108,34 @@ record literals and record patterns (`(obj.getter,)` / `final (g,) = …`),
 cascade sections (`obj..foo()`), and the implicit `.call` invocation on
 callable objects (`instance()` resolves to `instance.call()`), so members
 reached only through any of those forms are correctly counted as used.
+Super-parameter forwarding (Dart 2.17+, `class B extends A { B({super.x}); }`)
+counts as a use of the supertype constructor even though the AST has no
+`super(...)` call node — the rule reads the implicit super-constructor
+target off the resolved constructor element. The same applies to the
+synthetic default constructor inserted when a class declares no
+constructor of its own (`class B extends A {}` is a use of `A.new`).
+Parameterised-enum value declarations
+(`enum Route { home('/'); const Route(this.path); final String path; }`)
+implicitly invoke the enum's constructor at const-evaluation time, but
+the AST does not model that as an `InstanceCreationExpression` /
+`ConstructorName`. The rule reads the constructor target off
+`EnumConstantDeclaration.constructorElement`, so the enum's constructor
+counts as referenced once per declared value.
+Both the global reference set and the candidate set are projected
+through `Element.baseElement` before lookup, so members declared on a
+generic base class (`class Box<T> { void put(T v) {} }`) match call
+sites that resolve through a substituted view of the same declaration
+(`IntBox().put(0)` where `IntBox extends Box<int>`), and the same
+applies to factory constructors on generic sealed classes
+(`Holder<int>.value(0)`).
+Overrides of reachable supertype members are treated as uses: when a
+`MethodDeclaration` carries `@override` and the inherited supertype
+member is either declared outside the analyzed unit set (`dart:*`,
+`package:flutter`, any package outside the run) or is itself in the
+global reference set, the override is exempt. This applies uniformly to
+methods, operators, getters, and setters and covers framework callback
+overrides (`State.build`, `Object.toString`, `operator ==`, …) as well
+as in-repo abstract-base / concrete-subtype dispatch.
 
 Deliberately not flagged:
 
@@ -119,12 +147,23 @@ Deliberately not flagged:
 - top-level functions, getters, and setters declared in a library that has
   `part` files (a sibling part could legitimately reference them, and the
   rule does not currently traverse part libraries);
-- every member and constructor of a class that declares its own
-  `noSuchMethod` — that override can service any selector at runtime, so
-  members reached only through it have no static reference;
+- every member and constructor of a class whose supertype chain
+  (`extends` / `with` / `implements`) declares its own `noSuchMethod` —
+  that override can service any selector at runtime, so members reached
+  only through it have no static reference. The walk also recognises
+  `package:mocktail`'s `Fake` and `Mock` base classes by simple name,
+  since the analyzed sources typically do not pull the mocktail library
+  in as a resolved dependency;
 - every member and constructor declared in a library that imports
   `dart:mirrors` — reflection can invoke arbitrary members by name, so the
   rule conservatively skips the whole unit;
+- every declaration in a unit stamped with the de-facto generated-code
+  marker `// ignore_for_file: type=lint` at the top of the file — Flutter's
+  `flutter gen-l10n` writes this line into the synthetic `L` base class and
+  every per-locale `output-localization-file` subclass it emits, and other
+  build-time Dart codegen tools follow the same convention, so the rule
+  treats the marker as a "this file is generated, do not flag" signal and
+  skips every candidate collector for the unit;
 - members of a private, unreferenced class, mixin, enum, extension type, or
   extension — `unused_class` already flags the enclosing declaration, so
   re-flagging every member would just repeat the report.

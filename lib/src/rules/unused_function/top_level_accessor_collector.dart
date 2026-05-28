@@ -23,7 +23,10 @@ class _TopLevelAccessorCollector implements _UnusedFunctionCandidateCollector {
   const _TopLevelAccessorCollector();
 
   @override
-  Iterable<_Candidate> collect(ResolvedUnitResult unit) sync* {
+  Iterable<_Candidate> collect(
+    ResolvedUnitResult unit,
+    _CollectorContext context,
+  ) sync* {
     if (unit.libraryElement.fragments.length > 1) return;
     for (final declaration in unit.unit.declarations) {
       if (declaration is! FunctionDeclaration) continue;
@@ -33,7 +36,7 @@ class _TopLevelAccessorCollector implements _UnusedFunctionCandidateCollector {
       if (element == null) continue;
       yield _Candidate(
         nameToken: declaration.name,
-        element: element,
+        element: _declaredElement(element),
         kindLabel: declaration.isGetter
             ? 'top-level getter'
             : 'top-level setter',

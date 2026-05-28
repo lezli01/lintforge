@@ -23,6 +23,16 @@ samples/unused_function/
                                      # exemption — every member of every class
                                      # in a library that imports `dart:mirrors`
                                      # is exempt from the rule
+  lib/src/l10n/l10n.dart             # negative case for the
+  lib/src/l10n/l10n_en.dart          # `// ignore_for_file: type=lint`
+                                     # exemption — mocks the synthetic
+                                     # `L` base class and per-locale
+                                     # subclass that `flutter gen-l10n`
+                                     # emits under
+                                     # `output-localization-file`; every
+                                     # candidate in either unit is
+                                     # skipped because of the generated-
+                                     # code marker at the top of the file
 ```
 
 ## Run it
@@ -36,20 +46,22 @@ fvm dart run anal samples/unused_function/lib
 
 ## Expected output
 
-Eleven `unused_function` diagnostics — and nothing else:
+Thirteen `unused_function` diagnostics — and nothing else:
 
 ```
 samples/unused_function/lib/src/internals.dart:15:6 • [warning] unused_function: The top-level function "unusedPublicTopLevel" is declared but never used.
-samples/unused_function/lib/unused_function_sample.dart:27:6 • [warning] unused_function: The top-level function "_unusedPrivateTopLevel" is declared but never used.
-samples/unused_function/lib/unused_function_sample.dart:30:9 • [warning] unused_function: The top-level getter "_unusedTopLevelGetter" is declared but never used.
-samples/unused_function/lib/unused_function_sample.dart:33:5 • [warning] unused_function: The top-level setter "_unusedTopLevelSetter" is declared but never used.
-samples/unused_function/lib/unused_function_sample.dart:120:8 • [warning] unused_function: The method "_unusedPrivateMethod" is declared but never used.
-samples/unused_function/lib/unused_function_sample.dart:123:15 • [warning] unused_function: The static method "unusedStaticMethod" is declared but never used.
-samples/unused_function/lib/unused_function_sample.dart:126:11 • [warning] unused_function: The getter "unusedGetter" is declared but never used.
-samples/unused_function/lib/unused_function_sample.dart:129:7 • [warning] unused_function: The setter "unusedSetter" is declared but never used.
-samples/unused_function/lib/unused_function_sample.dart:132:20 • [warning] unused_function: The operator "-" is declared but never used.
-samples/unused_function/lib/unused_function_sample.dart:139:10 • [warning] unused_function: The local function "unusedLocal" is declared but never used.
-samples/unused_function/lib/unused_function_sample.dart:193:10 • [warning] unused_function: The extension method "unusedExtension" is declared but never used.
+samples/unused_function/lib/unused_function_sample.dart:29:6 • [warning] unused_function: The top-level function "_unusedPrivateTopLevel" is declared but never used.
+samples/unused_function/lib/unused_function_sample.dart:32:9 • [warning] unused_function: The top-level getter "_unusedTopLevelGetter" is declared but never used.
+samples/unused_function/lib/unused_function_sample.dart:35:5 • [warning] unused_function: The top-level setter "_unusedTopLevelSetter" is declared but never used.
+samples/unused_function/lib/unused_function_sample.dart:195:8 • [warning] unused_function: The method "_unusedPrivateMethod" is declared but never used.
+samples/unused_function/lib/unused_function_sample.dart:198:15 • [warning] unused_function: The static method "unusedStaticMethod" is declared but never used.
+samples/unused_function/lib/unused_function_sample.dart:201:11 • [warning] unused_function: The getter "unusedGetter" is declared but never used.
+samples/unused_function/lib/unused_function_sample.dart:204:7 • [warning] unused_function: The setter "unusedSetter" is declared but never used.
+samples/unused_function/lib/unused_function_sample.dart:207:20 • [warning] unused_function: The operator "-" is declared but never used.
+samples/unused_function/lib/unused_function_sample.dart:214:10 • [warning] unused_function: The local function "unusedLocal" is declared but never used.
+samples/unused_function/lib/unused_function_sample.dart:268:10 • [warning] unused_function: The extension method "unusedExtension" is declared but never used.
+samples/unused_function/lib/unused_function_sample.dart:324:8 • [warning] unused_function: The method "overrideButUnreachable" is declared but never used.
+samples/unused_function/lib/unused_function_sample.dart:345:7 • [warning] unused_function: The method "foo" is declared but never used.
 ```
 
 (Line / column numbers refer to the file named in each line.)
@@ -69,6 +81,8 @@ samples/unused_function/lib/unused_function_sample.dart:193:10 • [warning] unu
 | `P9`  | local `unusedLocal` inside `Service.usedMethod` | Local function with no reference in its enclosing body.                           |
 | `P10` | `StringX.unusedExtension`                   | Method on a public extension that is never invoked.                                   |
 | `P11` | `unusedPublicTopLevel` in `lib/src/internals.dart` | Public top-level function in `lib/src/`. Files under `lib/src/` are the package's internal surface, so public top-level declarations there are candidates. |
+| `P12` | `IsolatedSub.overrideButUnreachable`         | `@override` whose inherited supertype member is in the analyzed set but itself unreferenced — the override-of-reachable exemption does not apply, so the method is still flagged. |
+| `P13` | `NoSuchMethodTarget.foo`                     | Concrete method on a class whose supertype chain does NOT declare `noSuchMethod` — the supertype-walking exemption does not apply, so the unused member is still flagged. Acts as the positive control for the `noSuchMethod` walk. |
 
 ### Negative cases (MUST NOT be flagged)
 
@@ -85,6 +99,15 @@ samples/unused_function/lib/unused_function_sample.dart:193:10 • [warning] unu
 | `N9`  | `Service.call`                                             | Invoked from `main` via the implicit `.call` (`service()`); `visitFunctionExpressionInvocation` records the `call` element as a use. |
 | `N10` | every member of `NoSuchMethodHolder`                       | The class declares its own `noSuchMethod`, which can intercept any call by name at runtime — the rule skips every member and the constructor. |
 | `N11` | every member of `MirrorsHostedService` in `lib/src/mirrors_user.dart` | The library imports `dart:mirrors`, which can invoke arbitrary members by name — the rule skips every member and constructor declared in the unit. |
+| `N12` | every abstract getter on `L` in `lib/src/l10n/l10n.dart` and every concrete `@override` getter on `LEn` in `lib/src/l10n/l10n_en.dart` | Each file is stamped with the de-facto Dart "this is generated" marker `// ignore_for_file: type=lint` at the top, which `flutter gen-l10n` writes into every file it emits — the rule treats the marker as a unit-level exemption and skips every candidate collector for the unit. |
+| `N13` | `Greeter.build` extending `StatelessWidgetStub` | `@override` of an in-repo abstract supertype member that is itself referenced through `this` from the base class (`render()` calls `build()`) — the supertype member is in the global reference set, so the override is treated as a use. |
+| `N14` | `Sub.hook` extending `Base`                  | `@override` of an in-repo abstract supertype member that is invoked from the base class (`Base.run` calls `hook()` through implicit `this`) — same override-of-reachable exemption as N13. |
+| `N15` | `_FakeService.foo` extending `_Fake` implementing `NoSuchMethodTarget` | `_Fake` declares its own `noSuchMethod`; the supertype-walking exemption inspects `_FakeService.allSupertypes`, finds `_Fake.noSuchMethod`, and skips every member of `_FakeService`. Mocktail's `Fake` / `Mock` simple names are recognised the same way even when the base library is not part of the analyzed set. |
+| `N16` | `_C.foo` extending `_B extends _A` (two-hop) | `_A` declares `noSuchMethod`, `_B extends _A` forwards the override implicitly, `_C extends _B implements NoSuchMethodTarget`. The walk transitively finds `_A.noSuchMethod` through `_B`, so `_C.foo` is exempt despite neither `_B` nor `_C` declaring `noSuchMethod` directly. |
+| `N17` | `Box<T>.put` and `Box<T>.peek` called through `IntBox` | Generic-class members invoked through a non-generic subtype resolve to a substituted "member view" of the declared element. Both the candidate set and the global reference set are projected through `Element.baseElement` so the declared member matches the call site. Without normalisation `Box.put` and `Box.peek` would be flagged. |
+| `N18` | `Holder<int>.value(0)`                       | Factory constructor on a generic sealed class invoked with an explicit type argument resolves to a substituted view of the declared constructor; the same `baseElement` projection lets the declared factory match the call site. |
+| `N19` | `A.new` reached through `B`'s `super.x` forwarding (`class B extends A { const B({super.x}); }` plus `const B(x: 1)`) | Super-parameter forwarding (Dart 2.17+) produces no `SuperConstructorInvocation` AST node — the forwarding is expressed only through the `super.x` parameter. The rule reads the implicit super-constructor target off the constructor element and records it as a use, so `A`'s constructor must NOT be flagged. Also covers classes that declare no constructor of their own: the synthetic default constructor implicitly invokes super, and the `visitClassDeclaration` hook records that super target. |
+| `N20` | `Route`'s `const Route(this.path)` constructor on a parameterised enum (`enum Route { home('/'), settings('/settings'); const Route(this.path); final String path; }` plus `Route.home.path`) | Each enum-value declaration invokes the enum's constructor at const-evaluation time, but the AST does NOT model that as an `InstanceCreationExpression` / `ConstructorName` — the call is implicit in the `EnumConstantDeclaration` node and only reachable via `node.constructorElement`. The new `visitEnumConstantDeclaration` hook records that target, so the constructor must NOT be flagged. |
 
 Each positive case has a used twin that exercises the rule's negative
 path for the same kind:
