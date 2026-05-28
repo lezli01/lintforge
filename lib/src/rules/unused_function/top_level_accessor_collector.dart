@@ -36,7 +36,7 @@ class _TopLevelAccessorCollector implements _UnusedFunctionCandidateCollector {
       if (element == null) continue;
       yield _Candidate(
         nameToken: declaration.name,
-        element: element,
+        element: _declaredElement(element),
         kindLabel: declaration.isGetter
             ? 'top-level getter'
             : 'top-level setter',

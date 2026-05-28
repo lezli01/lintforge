@@ -45,7 +45,7 @@ class _TopLevelFunctionCollector implements _UnusedFunctionCandidateCollector {
       if (element == null) continue;
       yield _Candidate(
         nameToken: declaration.name,
-        element: element,
+        element: _declaredElement(element),
         kindLabel: 'top-level function',
       );
     }

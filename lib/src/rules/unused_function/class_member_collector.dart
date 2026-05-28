@@ -110,7 +110,7 @@ class _ClassMemberCollector implements _UnusedFunctionCandidateCollector {
     if (element == null) return null;
     return _Candidate(
       nameToken: declaration.name,
-      element: element,
+      element: _declaredElement(element),
       kindLabel: _kindLabelFor(declaration),
     );
   }

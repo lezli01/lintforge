@@ -108,6 +108,13 @@ record literals and record patterns (`(obj.getter,)` / `final (g,) = …`),
 cascade sections (`obj..foo()`), and the implicit `.call` invocation on
 callable objects (`instance()` resolves to `instance.call()`), so members
 reached only through any of those forms are correctly counted as used.
+Both the global reference set and the candidate set are projected
+through `Element.baseElement` before lookup, so members declared on a
+generic base class (`class Box<T> { void put(T v) {} }`) match call
+sites that resolve through a substituted view of the same declaration
+(`IntBox().put(0)` where `IntBox extends Box<int>`), and the same
+applies to factory constructors on generic sealed classes
+(`Holder<int>.value(0)`).
 Overrides of reachable supertype members are treated as uses: when a
 `MethodDeclaration` carries `@override` and the inherited supertype
 member is either declared outside the analyzed unit set (`dart:*`,

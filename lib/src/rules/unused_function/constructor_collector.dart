@@ -98,7 +98,7 @@ class _ConstructorCollector implements _UnusedFunctionCandidateCollector {
     final nameToken = declaration.name ?? classNameToken;
     return _Candidate(
       nameToken: nameToken,
-      element: element,
+      element: _declaredElement(element),
       kindLabel: 'constructor',
     );
   }

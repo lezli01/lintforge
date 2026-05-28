@@ -39,7 +39,7 @@ class _LocalFunctionVisitor extends RecursiveAstVisitor<void> {
         sink.add(
           _Candidate(
             nameToken: declaration.name,
-            element: element,
+            element: _declaredElement(element),
             kindLabel: 'local function',
           ),
         );

@@ -156,6 +156,23 @@ void main() {
   // `unused_class` does not flag `_C`.
   // ignore: unused_local_variable
   final twoHop = _C();
+
+  // (N17) Calls on a non-generic subtype of a generic base dispatch to
+  // the substituted member view (`Box<int>.put`, `Box<int>.peek`). The
+  // resolved element is a "member view" wrapper around the declared
+  // `Box.put` / `Box.peek`; the candidate uses the declared form. Both
+  // sides are projected through `Element.baseElement` so the global
+  // reference set matches the candidate and neither member is flagged.
+  IntBox().put(0);
+  // ignore: unused_local_variable
+  final peeked = IntBox().peek;
+
+  // (N18) Factory constructor on a generic sealed class invoked with an
+  // explicit type argument. The call site resolves to the substituted
+  // member view of `Holder.value`; without normalisation it would never
+  // match the declared candidate and the factory would be flagged.
+  // ignore: unused_local_variable
+  final holder = Holder<int>.value(0);
 }
 
 class Service {
@@ -346,4 +363,36 @@ class _B extends _A {}
 class _C extends _B implements NoSuchMethodTarget {
   @override
   int foo() => 0;
+}
+
+// === Generic-class member identity ===
+//
+// These cases exercise the "declared element" normalisation applied to
+// both sides of the reference set: a member resolved through a
+// substituted generic type produces a member-view wrapper that does
+// not equal the declared element. Both candidates and references are
+// projected through `Element.baseElement` so generic call sites match
+// the declared members.
+
+// (N17) Methods and getters declared on a generic base class, called
+// through a non-generic subtype. Without the normalisation, `Box.put`
+// and `Box.peek` would be flagged as unused.
+class Box<T> {
+  void put(T v) {}
+  T? get peek => null;
+}
+
+class IntBox extends Box<int> {}
+
+// (N18) Factory constructor on a generic sealed class. `Holder<int>.value(0)`
+// in `main` resolves to a substituted view of the declared factory
+// constructor; without normalisation the declared constructor would
+// never match.
+sealed class Holder<T> {
+  const factory Holder.value(T v) = _ValueHolder;
+}
+
+class _ValueHolder<T> implements Holder<T> {
+  const _ValueHolder(this.v);
+  final T v;
 }

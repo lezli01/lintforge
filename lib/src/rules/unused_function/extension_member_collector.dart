@@ -68,7 +68,7 @@ class _ExtensionMemberCollector implements _UnusedFunctionCandidateCollector {
         : nameToken;
     return _Candidate(
       nameToken: anchor,
-      element: element,
+      element: _declaredElement(element),
       kindLabel: _kindLabel(declaration),
     );
   }

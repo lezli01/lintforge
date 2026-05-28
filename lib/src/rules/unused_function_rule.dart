@@ -451,8 +451,27 @@ bool _overridesReachableSupertypeMember(
   final inheritedSource =
       inherited.firstFragment.libraryFragment.source.fullName;
   if (!context.analyzedFilePaths.contains(inheritedSource)) return true;
-  return context.globalReferences.contains(inherited);
+  return context.globalReferences.contains(_declaredElement(inherited));
 }
+
+/// Projects [element] to its declared form — the non-substituted base
+/// element when [element] is a "member view" wrapper produced by the
+/// analyzer for a generic interface with substituted type arguments,
+/// otherwise [element] itself.
+///
+/// When a call site resolves a member through a substituted generic type
+/// (e.g. `IntBox().put(0)` where `IntBox extends Box<int>`), the
+/// resolved element is a `SubstitutedElementImpl` view around the
+/// declared `Box.put` rather than the declared element itself.
+/// `Element.baseElement` collapses that view to the declared element,
+/// and crucially returns the receiver unchanged when no substitution is
+/// in play, so it is safe to call on every element.
+///
+/// Both the global reference set ([_GlobalReferenceCollector._add]) and
+/// the candidate-construction sites in every collector project through
+/// this helper, so `Set<Element>.contains` matches a generic call site
+/// against the declared candidate.
+Element _declaredElement(Element element) => element.baseElement;
 
 bool _hasVmEntryPointPragma(NodeList<Annotation> metadata) {
   for (final annotation in metadata) {
@@ -547,7 +566,7 @@ class _GlobalReferenceCollector extends RecursiveAstVisitor<void> {
   _GlobalReferenceCollector(this.sink);
 
   void _add(Element? element) {
-    if (element != null) sink.add(element);
+    if (element != null) sink.add(_declaredElement(element));
   }
 
   @override
