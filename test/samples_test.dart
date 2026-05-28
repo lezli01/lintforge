@@ -126,6 +126,18 @@ const Map<String, List<String>> _sampleIncludeDirs = {
   'all_rules': ['lib', 'bin'],
 };
 
+/// Exclude globs to pass to the runner for each sample. Mirrors the
+/// `--exclude` flag in each sample's README invocation. Samples not in the
+/// map default to `const <String>[]` (no excludes). Samples present here
+/// exercise the excluded-files-as-references behavior: excluded paths are
+/// filtered out of the *reportable* set, but the frame still parses them
+/// so their references flow into the cross-file rules' graphs.
+const Map<String, List<String>> _sampleExcludePaths = {
+  'unused_function': ['*.g.dart'],
+  'unused_source_file': ['*.g.dart'],
+  'all_rules': ['*.g.dart'],
+};
+
 /// Samples whose entry points use a `package:` self-import. For these we
 /// materialise a minimal `.dart_tool/package_config.json` in the temp copy
 /// so the import resolves and the multi-file rule sees the full reachability
@@ -218,7 +230,9 @@ void main() {
           registry: _buildCliRegistry(),
           options: AnalOptions(
             includePaths: List<String>.unmodifiable(destIncludePaths),
-            excludePaths: const <String>[],
+            excludePaths: List<String>.unmodifiable(
+              _sampleExcludePaths[sampleName] ?? const <String>[],
+            ),
             enabledRuleIds: const <String>{},
           ),
         );

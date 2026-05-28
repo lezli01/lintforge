@@ -17,3 +17,12 @@ void unusedPublicTopLevel() {}
 // Used public top-level function — referenced from `main` in the
 // sample's entry point, so the rule does not flag it.
 void usedPublicTopLevel() {}
+
+// (N21) Public top-level function whose ONLY reference lives in the
+// excluded `lib/src/refs.g.dart` file. The runner is invoked with
+// `--exclude '*.g.dart'`, so `refs.g.dart` is filtered out of the
+// *reportable* set and never has its own candidates flagged. The frame
+// still parses excluded files and feeds them into the cross-file rule's
+// global reference set, so the call below keeps `keptAliveByExcludedRef`
+// alive — without that behavior, this would be a P11-shaped positive.
+void keptAliveByExcludedRef() {}

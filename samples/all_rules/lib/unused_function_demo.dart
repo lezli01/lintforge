@@ -183,11 +183,23 @@ void main() {
   // ignore: unused_local_variable
   final b = const B(x: 1);
 
-  // (N20) Parameterised enum — `Route`'s `const Route(this.path)`
-  // constructor is invoked by each enum-value declaration
-  // (`home('/')`, `settings('/settings')`).
+  // Parameterised enum constructor reference — each enum-value
+  // declaration on `Route` invokes the enum's `const Route(this.path)`
+  // constructor through `EnumConstantDeclaration.constructorElement`,
+  // so the constructor stays referenced even though the read below
+  // produces no `InstanceCreationExpression` AST node.
   // ignore: unused_local_variable
   final routePath = Route.home.path;
+
+  // (N20) `keptAliveByExcludedRef` in `lib/src/internals.dart` is
+  // referenced ONLY from the excluded `lib/src/refs.g.dart` file. The
+  // sample is run with `--exclude '*.g.dart'`, which filters
+  // `refs.g.dart` out of the *reportable* set but still parses it so
+  // cross-file references flow into the global reference set. The call
+  // site inside `refs.g.dart` therefore keeps `keptAliveByExcludedRef`
+  // alive — without the excluded-files-as-references behavior, this
+  // would be a P11-shaped positive. No code lives here for N20; the
+  // exercise is the cross-library reference from the excluded file.
 }
 
 class Service {
