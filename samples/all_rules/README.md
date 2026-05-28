@@ -1,8 +1,8 @@
 # `all_rules` sample
 
 A self-contained Dart/Flutter package that exercises **every** built-in rule
-shipped by the [`anal`](../..) package in a single project — one positive and
-one negative case per rule.
+shipped by the [`anal`](../..) package in a single project, with the same
+breadth of positive and negative cases that each per-rule sample covers.
 
 The sample exists so consumers (and the rules' own contributors) can see all
 three rules co-firing on a real `pub get`-resolved tree, and so the reporter's
@@ -13,12 +13,18 @@ output for a mixed run is easy to eyeball.
 ```
 samples/all_rules/
   pubspec.yaml                       # path-dependent on the root `anal` package
+  bin/
+    main.dart                        # bin/ entry point — always reachable
   lib/
     all_rules_sample.dart            # lib/<package>.dart entry point
-    unused_function_demo.dart        # positive + negative for unused_function
-    unused_class_demo.dart           # positive + negative for unused_class
+    unused_function_demo.dart        # positive + negative cases for unused_function
+    unused_class_demo.dart           # positive + negative cases for unused_class
     src/
-      used.dart                      # imported by the entry — reachable
+      internals.dart                 # public-top-level positive for unused_function
+                                     # (`lib/src/` is the package's internal surface)
+      used.dart                      # library that declares `part 'used_via_part.dart';`
+                                     # and is imported by the entry — reachable
+      used_via_part.dart             # `part of 'used.dart';` — reachable transitively
       orphan.dart                    # never imported — UNREACHABLE
 ```
 
@@ -31,14 +37,32 @@ fvm dart pub get --directory samples/all_rules
 fvm dart run anal samples/all_rules
 ```
 
+The runner analyses both `lib/` and `bin/` so that the `bin/main.dart`
+entry-point negative for `unused_source_file` is exercised alongside the
+`lib/` cases.
+
 ## Expected output
 
-Exactly three diagnostics — one per built-in rule — and nothing else:
+Exactly **16** diagnostics — 11 `unused_function`, 4 `unused_class`, and 1
+`unused_source_file` — and nothing else:
 
 ```
+samples/all_rules/lib/src/internals.dart:15:6 • [warning] unused_function: The top-level function "unusedPublicTopLevel" is declared but never used.
 samples/all_rules/lib/src/orphan.dart:1:1 • [warning] unused_source_file: The source file "samples/all_rules/lib/src/orphan.dart" is never imported, exported, or used as a part.
-samples/all_rules/lib/unused_class_demo.dart:21:7 • [warning] unused_class: The class "_UnusedPrivateClass" is declared but never used.
-samples/all_rules/lib/unused_function_demo.dart:16:6 • [warning] unused_function: The top-level function "_unusedPrivateTopLevel" is declared but never used.
+samples/all_rules/lib/unused_class_demo.dart:13:7 • [warning] unused_class: The class "_Foo" is declared but never used.
+samples/all_rules/lib/unused_class_demo.dart:16:7 • [warning] unused_class: The mixin "_Bar" is declared but never used.
+samples/all_rules/lib/unused_class_demo.dart:19:6 • [warning] unused_class: The enum "_Baz" is declared but never used.
+samples/all_rules/lib/unused_class_demo.dart:22:16 • [warning] unused_class: The extension type "_Qux" is declared but never used.
+samples/all_rules/lib/unused_function_demo.dart:26:6 • [warning] unused_function: The top-level function "_unusedPrivateTopLevel" is declared but never used.
+samples/all_rules/lib/unused_function_demo.dart:29:9 • [warning] unused_function: The top-level getter "_unusedTopLevelGetter" is declared but never used.
+samples/all_rules/lib/unused_function_demo.dart:32:5 • [warning] unused_function: The top-level setter "_unusedTopLevelSetter" is declared but never used.
+samples/all_rules/lib/unused_function_demo.dart:86:8 • [warning] unused_function: The method "_unusedPrivateMethod" is declared but never used.
+samples/all_rules/lib/unused_function_demo.dart:89:15 • [warning] unused_function: The static method "unusedStaticMethod" is declared but never used.
+samples/all_rules/lib/unused_function_demo.dart:92:11 • [warning] unused_function: The getter "unusedGetter" is declared but never used.
+samples/all_rules/lib/unused_function_demo.dart:95:7 • [warning] unused_function: The setter "unusedSetter" is declared but never used.
+samples/all_rules/lib/unused_function_demo.dart:98:20 • [warning] unused_function: The operator "-" is declared but never used.
+samples/all_rules/lib/unused_function_demo.dart:105:10 • [warning] unused_function: The local function "unusedLocal" is declared but never used.
+samples/all_rules/lib/unused_function_demo.dart:121:10 • [warning] unused_function: The extension method "unusedExtension" is declared but never used.
 ```
 
 (Diagnostic ordering depends on the runner's file iteration; the set of
@@ -46,19 +70,69 @@ samples/all_rules/lib/unused_function_demo.dart:16:6 • [warning] unused_functi
 
 ### Positive cases (MUST be flagged)
 
-| File                                              | Rule                 | Subject                                                                                  |
-| ------------------------------------------------- | -------------------- | ---------------------------------------------------------------------------------------- |
-| `lib/unused_function_demo.dart`                   | `unused_function`    | `_unusedPrivateTopLevel` — private top-level function with no reference in the unit.     |
-| `lib/unused_class_demo.dart`                      | `unused_class`       | `_UnusedPrivateClass` — private top-level class with no reference in the unit.           |
-| `lib/src/orphan.dart`                             | `unused_source_file` | the file itself — never imported, exported, or used as a `part` from any entry point.    |
+| Tag  | File                              | Rule                 | Subject                                                                                |
+| ---- | --------------------------------- | -------------------- | -------------------------------------------------------------------------------------- |
+| `P1` | `lib/unused_function_demo.dart`   | `unused_function`    | `_unusedPrivateTopLevel` — private top-level function with no reference in the unit.   |
+| `P2` | `lib/unused_function_demo.dart`   | `unused_function`    | `_unusedTopLevelGetter` — private top-level getter that is never read.                 |
+| `P3` | `lib/unused_function_demo.dart`   | `unused_function`    | `_unusedTopLevelSetter` — private top-level setter that is never written.              |
+| `P4` | `lib/unused_function_demo.dart`   | `unused_function`    | `Service._unusedPrivateMethod` — private instance method with no reference anywhere.   |
+| `P5` | `lib/unused_function_demo.dart`   | `unused_function`    | `Service.unusedStaticMethod` — static method with no reference anywhere.               |
+| `P6` | `lib/unused_function_demo.dart`   | `unused_function`    | `Service.unusedGetter` — instance getter that is never read.                           |
+| `P7` | `lib/unused_function_demo.dart`   | `unused_function`    | `Service.unusedSetter` — instance setter that is never written.                        |
+| `P8` | `lib/unused_function_demo.dart`   | `unused_function`    | `Service.operator -` — operator that is never invoked.                                 |
+| `P9` | `lib/unused_function_demo.dart`   | `unused_function`    | local `unusedLocal` inside `Service.usedMethod` — local function with no reference in its enclosing body. |
+| `P10`| `lib/unused_function_demo.dart`   | `unused_function`    | `StringX.unusedExtension` — method on a public extension that is never invoked.        |
+| `P11`| `lib/src/internals.dart`          | `unused_function`    | `unusedPublicTopLevel` — public top-level function in `lib/src/` (the package's internal surface) with no reference. |
+| `P1` | `lib/unused_class_demo.dart`      | `unused_class`       | `class _Foo {}` — unused private class.                                                |
+| `P2` | `lib/unused_class_demo.dart`      | `unused_class`       | `mixin _Bar {}` — unused private mixin.                                                |
+| `P3` | `lib/unused_class_demo.dart`      | `unused_class`       | `enum _Baz { a, b }` — unused private enum.                                            |
+| `P4` | `lib/unused_class_demo.dart`      | `unused_class`       | `extension type _Qux(int value) {}` — unused private extension type.                   |
+| `P1` | `lib/src/orphan.dart`             | `unused_source_file` | the file itself — never imported, exported, or used as a `part` from any entry point.  |
 
 ### Negative cases (MUST NOT be flagged)
 
-| File                                              | Rule                 | Why the rule skips it                                                                    |
-| ------------------------------------------------- | -------------------- | ---------------------------------------------------------------------------------------- |
-| `lib/unused_function_demo.dart`                   | `unused_function`    | `_usedPrivateTopLevel` is called from `main` in the same unit.                           |
-| `lib/unused_class_demo.dart`                      | `unused_class`       | `_UsedPrivateClass` is invoked from `main` in the same unit.                             |
-| `lib/src/used.dart`                               | `unused_source_file` | imported by `lib/all_rules_sample.dart` (a `lib/` direct-child entry point).             |
-| `lib/all_rules_sample.dart`                       | `unused_source_file` | sits directly under `lib/`, so the rule treats it as an entry point.                     |
-| `lib/unused_function_demo.dart`                   | `unused_source_file` | sits directly under `lib/`, so the rule treats it as an entry point.                     |
-| `lib/unused_class_demo.dart`                      | `unused_source_file` | sits directly under `lib/`, so the rule treats it as an entry point.                     |
+`unused_function`:
+
+| Tag  | Where                                       | Why the rule skips it                                                                 |
+| ---- | ------------------------------------------- | ------------------------------------------------------------------------------------- |
+| `N1` | `publicTopLevel`                            | Public top-level function in a file directly under `lib/` — part of the package's public surface, reachable from outside the analyzed set. |
+| `N2` | `main`                                      | The `main` entry point is exempt by name.                                             |
+| `N3` | `_usedPrivate`                              | Referenced as both a direct call and a tear-off in `main`.                            |
+| `N4` | `external _externalPrivate`                 | `external` top-level functions are exempt regardless of name.                         |
+| `N5` | `@pragma('vm:entry-point')` private         | `@pragma('vm:entry-point')` annotated declarations are exempt regardless of name.     |
+
+Each positive case has a used twin that exercises the negative path for the
+same kind:
+
+- `_usedPrivate` (top-level function) — called and torn off from `main`.
+- `_usedTopLevelGetter` / `_usedTopLevelSetter` — read / written from `main`.
+- `Service.usedMethod`, `Service.usedStaticMethod`, `Service.usedGetter`,
+  `Service.usedSetter`, and `Service.operator +` — all referenced from
+  `main`.
+- `usedLocal` inside `Service.usedMethod` — invoked in its enclosing body.
+- `StringX.usedExtension` — invoked from `main`.
+- `usedPublicTopLevel` in `lib/src/internals.dart` — invoked from `main`.
+
+`unused_class`:
+
+| Tag  | Why it is silent                                                                   |
+| ---- | ---------------------------------------------------------------------------------- |
+| `N1` | `PublicClass` — only private (`_`-prefixed) declarations are inspected.            |
+| `N2` | `_UsedAsType` is referenced as a parameter type annotation.                        |
+| `N3` | `_UsedAsExtends` is referenced in an `extends` clause.                             |
+| `N4` | `_UsedAsImplements` is referenced in an `implements` clause.                       |
+| `N5` | `_UsedAsIs` is referenced in an `is` check.                                        |
+| `N6` | `_UsedAsAs` is referenced in an `as` cast (and as a return type).                  |
+| `N7` | `_UsedStatic` is referenced via static-member access (`_UsedStatic.value`).        |
+| `N8` | `class _Alias = _AliasBase with _AliasMixin;` — `ClassTypeAlias` is out of scope.  |
+| `N9` | `extension _Ext on int {}` — non-type `extension` declarations are out of scope.   |
+| `N10`| `@pragma('vm:entry-point')` annotated `_EntryClass` is exempted by the rule.       |
+
+`unused_source_file`:
+
+| File                              | Why the rule skips it                                              |
+| --------------------------------- | ------------------------------------------------------------------ |
+| `bin/main.dart`                   | `bin/` entry point — always reachable.                             |
+| `lib/all_rules_sample.dart`       | sits directly under `lib/`, so the rule treats it as an entry point. |
+| `lib/src/used.dart`               | imported by `lib/all_rules_sample.dart` (a `lib/` direct-child entry point). |
+| `lib/src/used_via_part.dart`      | `part of 'used.dart';` — reachable transitively via the entry-point → `used.dart` → `used_via_part.dart` chain. |
