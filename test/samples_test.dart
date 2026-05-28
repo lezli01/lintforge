@@ -49,6 +49,15 @@ const Map<String, List<(String, String)>> _expectedDiagnostics = {
   // built-in rules — eleven unused_function (P11 in lib/src/internals.dart and
   // P1..P10 in lib/unused_function_demo.dart), four unused_class (P1..P4 in
   // lib/unused_class_demo.dart), and one unused_source_file (lib/src/orphan.dart).
+  // The combined sample also exercises the per-rule feature-aware negative cases:
+  // object patterns, record literals + record patterns, cascades, callable-object
+  // `.call`, and the `noSuchMethod` / `dart:mirrors` exemptions for unused_function
+  // (lib/unused_function_demo.dart and lib/src/mirrors_user.dart); object patterns,
+  // record type annotations, and sealed-class pattern matching for unused_class
+  // (lib/unused_class_demo.dart); and conditional + deferred imports for
+  // unused_source_file (lib/src/conditional_hub.dart, lib/src/_io_impl.dart,
+  // lib/src/_web_impl.dart, lib/src/deferred_target.dart). All of those negative
+  // cases must NOT be flagged.
   'all_rules': [
     ('unused_function', 'lib/src/internals.dart'),
     ('unused_function', 'lib/unused_function_demo.dart'),
