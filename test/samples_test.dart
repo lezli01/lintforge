@@ -27,7 +27,13 @@ const Map<String, List<(String, String)>> _expectedDiagnostics = {
   // base form. N19 exercises super-parameter forwarding (`class B
   // extends A { const B({super.x}); }` plus `const B(x: 1)`): the
   // implicit super-constructor invocation is recorded as a use of
-  // `A.new`, so `A`'s constructor MUST NOT be flagged. The companion
+  // `A.new`, so `A`'s constructor MUST NOT be flagged. N20 exercises
+  // parameterised enums (`enum Route { home('/'), settings('/settings');
+  // const Route(this.path); final String path; }` plus a read of
+  // `Route.home.path`): each enum-value declaration invokes the enum's
+  // constructor through `EnumConstantDeclaration.constructorElement`,
+  // which the rule's `visitEnumConstantDeclaration` hook records as a
+  // use — so `Route`'s constructor MUST NOT be flagged. The companion
   // lib/src/l10n/l10n.dart and lib/src/l10n/l10n_en.dart mock the
   // output of `flutter gen-l10n` and are stamped with the de-facto
   // generated-code marker `// ignore_for_file: type=lint`; every
@@ -76,7 +82,11 @@ const Map<String, List<(String, String)>> _expectedDiagnostics = {
   // non-generic subtype and a generic sealed-class factory),
   // super-parameter forwarding (`class B extends A { const B({super.x}); }`
   // plus `const B(x: 1)` — the implicit super-constructor invocation
-  // keeps `A.new` referenced), and the
+  // keeps `A.new` referenced), parameterised enums (`enum Route {
+  // home('/'), settings('/settings'); const Route(this.path); final String
+  // path; }` plus a read of `Route.home.path` — each enum-value declaration
+  // invokes `Route`'s constructor through
+  // `EnumConstantDeclaration.constructorElement`), and the
   // `// ignore_for_file: type=lint` generated-code marker exemption for
   // unused_function (lib/unused_function_demo.dart, lib/src/mirrors_user.dart, and
   // lib/src/l10n/l10n.dart + lib/src/l10n/l10n_en.dart); object patterns,

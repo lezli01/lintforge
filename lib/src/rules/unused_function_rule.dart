@@ -54,12 +54,18 @@ part 'unused_function/top_level_function_collector.dart';
 /// the resolved element of every reference-bearing AST node — including
 /// tear-offs, named-type references, constructor invocations and
 /// redirects, operator and index expressions, explicit member accesses,
-/// setter writes, and the *implicit* super-constructor target of every
-/// generative subclass constructor (super-parameter forwarding,
-/// `B({super.x})`, produces no [SuperConstructorInvocation] node but
-/// still chains to the supertype at runtime; classes that declare no
-/// constructors of their own also get a synthetic default constructor
-/// that implicitly invokes super).
+/// setter writes, the constructor invoked by each enum-value
+/// declaration (parameterised enums like
+/// `enum Route { home('/'); const Route(this.path); }` call the
+/// constructor once per declared value but produce no
+/// [InstanceCreationExpression] / [ConstructorName] AST node — the
+/// reference is only reachable via
+/// [EnumConstantDeclaration.constructorElement]), and the *implicit*
+/// super-constructor target of every generative subclass constructor
+/// (super-parameter forwarding, `B({super.x})`, produces no
+/// [SuperConstructorInvocation] node but still chains to the supertype
+/// at runtime; classes that declare no constructors of their own also
+/// get a synthetic default constructor that implicitly invokes super).
 ///
 /// The rule deliberately ignores the library's `main` entry point,
 /// public top-level functions / getters / setters declared outside
@@ -610,6 +616,21 @@ class _GlobalReferenceCollector extends RecursiveAstVisitor<void> {
   void visitSuperConstructorInvocation(SuperConstructorInvocation node) {
     _add(node.element);
     super.visitSuperConstructorInvocation(node);
+  }
+
+  @override
+  void visitEnumConstantDeclaration(EnumConstantDeclaration node) {
+    // Each enum-value declaration (`home('/')`, `settings('/settings')`,
+    // …) invokes the enum's constructor at const-evaluation time, but
+    // the AST does NOT model that as an [InstanceCreationExpression] /
+    // [ConstructorName] — the call is implicit in the
+    // [EnumConstantDeclaration] node itself and only reachable via
+    // `node.constructorElement`. Without recording it here, a
+    // parameterised enum's `const Foo(this.x)` constructor would never
+    // land in the global reference set even though every declared
+    // value invokes it.
+    _add(node.constructorElement);
+    super.visitEnumConstantDeclaration(node);
   }
 
   @override

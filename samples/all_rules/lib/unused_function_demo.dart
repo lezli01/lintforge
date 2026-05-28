@@ -182,6 +182,12 @@ void main() {
   // must NOT be flagged.
   // ignore: unused_local_variable
   final b = const B(x: 1);
+
+  // (N20) Parameterised enum — `Route`'s `const Route(this.path)`
+  // constructor is invoked by each enum-value declaration
+  // (`home('/')`, `settings('/settings')`).
+  // ignore: unused_local_variable
+  final routePath = Route.home.path;
 }
 
 class Service {
@@ -421,4 +427,24 @@ abstract class A {
 
 class B extends A {
   const B({super.x});
+}
+
+// === Parameterised enum constructor invoked by enum-value declarations ===
+//
+// (N20) Each enum-value declaration on a parameterised enum implicitly
+// invokes the enum's constructor at const-evaluation time, but the AST
+// does NOT model that as an [InstanceCreationExpression] /
+// [ConstructorName] — the call is implicit in the
+// [EnumConstantDeclaration] node and only reachable via
+// `node.constructorElement`. The rule's `visitEnumConstantDeclaration`
+// hook records that target, so `Route`'s `const Route(this.path)`
+// constructor must NOT be flagged.
+
+enum Route {
+  home('/'),
+  settings('/settings');
+
+  const Route(this.path);
+
+  final String path;
 }

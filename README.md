@@ -114,6 +114,13 @@ counts as a use of the supertype constructor even though the AST has no
 target off the resolved constructor element. The same applies to the
 synthetic default constructor inserted when a class declares no
 constructor of its own (`class B extends A {}` is a use of `A.new`).
+Parameterised-enum value declarations
+(`enum Route { home('/'); const Route(this.path); final String path; }`)
+implicitly invoke the enum's constructor at const-evaluation time, but
+the AST does not model that as an `InstanceCreationExpression` /
+`ConstructorName`. The rule reads the constructor target off
+`EnumConstantDeclaration.constructorElement`, so the enum's constructor
+counts as referenced once per declared value.
 Both the global reference set and the candidate set are projected
 through `Element.baseElement` before lookup, so members declared on a
 generic base class (`class Box<T> { void put(T v) {} }`) match call
