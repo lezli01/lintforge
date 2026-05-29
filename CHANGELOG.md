@@ -1,5 +1,28 @@
 # Changelog
 
+## [0.3.8](https://github.com/lezli01/anal/compare/v0.3.7...v0.3.8) (2026-05-29)
+
+
+### Features
+
+* **cli:** add --list-rules option to print registered rules ([fdcd0e4](https://github.com/lezli01/anal/commit/fdcd0e4bc5a730dbd8b4ba501522ff215855f84e))
+* **cli:** add --list-rules option to print registered rules ([#31](https://github.com/lezli01/anal/issues/31)) ([2761611](https://github.com/lezli01/anal/commit/276161180feacde0dcbb041817d89ffab736ab9b))
+* hardening unused functions ([#35](https://github.com/lezli01/anal/issues/35)) ([251e696](https://github.com/lezli01/anal/commit/251e6962300ba1d00efc2e68ab84cfe20ea5aee5))
+* **unused_function:** exempt constructors of freezed-annotated classes ([ff79b39](https://github.com/lezli01/anal/commit/ff79b39ee12ac59b2a28e826898cca3fc888f591))
+* **unused_function:** exempt constructors of freezed-annotated classes ([#34](https://github.com/lezli01/anal/issues/34)) ([1ef7ca2](https://github.com/lezli01/anal/commit/1ef7ca2da88ac530f1bd87ea675e053791ff1870))
+* **unused:** suppress nested findings inside unused source files ([c972e32](https://github.com/lezli01/anal/commit/c972e327cc6e6a9567998f56a7910899766e1050))
+* **unused:** suppress nested findings inside unused source files ([#36](https://github.com/lezli01/anal/issues/36)) ([4a84f2c](https://github.com/lezli01/anal/commit/4a84f2c4c81dfacfa1544ffb94e41fa2816939fb))
+
+
+### Bug Fixes
+
+* **runner:** exclude .dart_tool/ and build/ from analysis by default ([b3973b3](https://github.com/lezli01/anal/commit/b3973b307f6834ce2f2fa1d567d6a1725659a512))
+* **runner:** exclude .dart_tool/ and build/ from analysis by default ([#33](https://github.com/lezli01/anal/issues/33)) ([6456e5c](https://github.com/lezli01/anal/commit/6456e5caad78648cca56e8fc10f19d5bf73716b9))
+* **unused_function:** exempt conditional-export and public-API members ([fdd67eb](https://github.com/lezli01/anal/commit/fdd67eb99a7ab1694d648373350a638ae2f7ec79))
+* **unused_function:** exempt conditional-export/import branch targets ([b7ad632](https://github.com/lezli01/anal/commit/b7ad6328bff4fddf8749c9f323cdc8c83406597a))
+* **unused_function:** exempt public members of public types outside lib/src/ ([e9de657](https://github.com/lezli01/anal/commit/e9de65722609d1f362786069d0b87784df36279e))
+* **unused_function:** exempt supertype overrides without [@override](https://github.com/override) ([dd40f83](https://github.com/lezli01/anal/commit/dd40f83dde5e3247ae350c3f51074ecce68520a8))
+
 ## [0.3.7](https://github.com/lezli01/anal/compare/v0.3.6...v0.3.7) (2026-05-28)
 
 
