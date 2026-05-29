@@ -85,18 +85,22 @@ part 'unused_function/top_level_function_collector.dart';
 /// can reach members through reflection or dynamic dispatch:
 ///
 /// * **Overrides of reachable supertype members.** When a
-///   [MethodDeclaration] carries an `@override` annotation and the
-///   inherited supertype member is either declared outside the
-///   analyzed unit set (e.g. `dart:*`, `package:flutter`, any package
-///   that did not make it into the [MultiFileAnalysisContext]) or is
-///   itself present in the global reference set, the rule treats the
-///   override as a "use" of the candidate. This catches framework
-///   callback overrides (`State.build`, `Widget.createElement`, etc.)
-///   as well as in-repo abstract base / concrete subtype dispatch where
-///   the base member is statically referenced. The check uses
-///   [InterfaceElement.getInheritedMember] to resolve the overridden
-///   member, so equivalent reasoning applies uniformly to methods,
-///   operators, getters, and setters.
+///   [MethodDeclaration] overrides an inherited supertype member that is
+///   either declared outside the analyzed unit set (e.g. `dart:*`,
+///   `package:flutter`, any package that did not make it into the
+///   [MultiFileAnalysisContext]) or is itself present in the global
+///   reference set, the rule treats the override as a "use" of the
+///   candidate. No explicit `@override` annotation is required — a
+///   declaration that shadows a supertype member is an override whether
+///   or not it is annotated, and framework callbacks
+///   (`State.createState`, `Widget.createElement`, lifecycle hooks) are
+///   routinely written without the annotation. This catches framework
+///   callback overrides as well as in-repo abstract base / concrete
+///   subtype dispatch where the base member is statically referenced.
+///   The check resolves the overridden member via
+///   [InterfaceElement.getInheritedMember] with a by-name fallback
+///   across the full supertype chain, so equivalent reasoning applies
+///   uniformly to methods, operators, getters, and setters.
 /// * **`noSuchMethod`-declaring classes/mixins.** When the enclosing
 ///   class or mixin — or any of its supertypes reached through
 ///   `extends`, `with`, `implements`, or mixin `on` clauses — declares
@@ -138,6 +142,16 @@ part 'unused_function/top_level_function_collector.dart';
 ///   generated code. The rule treats the marker as a "this file is
 ///   generated, do not flag" signal and skips every candidate
 ///   collector for the unit.
+/// * **Conditional-export/import branch targets.** A conditional
+///   directive (`export 'stub.dart' if (dart.library.html)
+///   'x_web.dart';`) resolves to exactly one branch at analysis time,
+///   so declarations and members in the *non-selected* branch files are
+///   reached only through the wrapper library's public export surface
+///   and look unreferenced. The rule collects the file path of every
+///   configuration branch URI of any export/import directive across the
+///   analyzed unit set and skips every candidate declared in such a
+///   file — the whole file is treated as part of the platform export
+///   surface. See [_conditionalBranchTargetPaths].
 ///
 /// **Features that flow through existing visitors with no extra
 /// handling.** The following language features do not need
@@ -203,9 +217,12 @@ class UnusedFunctionRule implements MultiFileAnalyzerRule {
       analyzedFilePaths: context.analyzedFilePaths,
     );
 
+    final conditionalBranchPaths = _conditionalBranchTargetPaths(context.units);
+
     final diagnostics = <Diagnostic>[];
     for (final unit in context.units) {
       if (!context.reportableFilePaths.contains(unit.path)) continue;
+      if (conditionalBranchPaths.contains(unit.path)) continue;
       if (_unitIsGeneratedTypeLintIgnored(unit.unit)) continue;
       final skipMemberCandidates = _unitImportsDartMirrors(unit.unit);
       for (final collector in collectors) {
@@ -320,6 +337,41 @@ bool _unitImportsDartMirrors(CompilationUnit unit) {
   return false;
 }
 
+/// Collects the absolute file path of every configuration branch URI of
+/// an export/import directive across [units].
+///
+/// A conditional directive
+/// (`export 'stub.dart' if (dart.library.html) 'x_web.dart';`) lists one
+/// or more platform-specific branches via `if (...)` configurations. The
+/// analyzer resolves the directive to exactly one branch for the current
+/// build target, so the *non-selected* branch files are never imported
+/// directly — their declarations and members are reached only through
+/// the wrapper library's public export surface and would otherwise look
+/// unreferenced.
+///
+/// Every branch is a real reference (per LANGUAGE.md, "Conditional
+/// Imports and Exports" — treat all candidate URIs as reachable), so
+/// this collects each [Configuration.resolvedUri] that resolves to a
+/// [DirectiveUriWithSource] and returns the full set of branch-target
+/// source paths. The dispatch site skips every candidate declared in one
+/// of these files, treating the whole file as part of the platform
+/// export surface.
+Set<String> _conditionalBranchTargetPaths(Iterable<ResolvedUnitResult> units) {
+  final paths = <String>{};
+  for (final unit in units) {
+    for (final directive in unit.unit.directives) {
+      if (directive is! NamespaceDirective) continue;
+      for (final configuration in directive.configurations) {
+        final resolvedUri = configuration.resolvedUri;
+        if (resolvedUri is DirectiveUriWithSource) {
+          paths.add(resolvedUri.source.fullName);
+        }
+      }
+    }
+  }
+  return paths;
+}
+
 /// Whether [unit] is stamped with a generated-code marker at the top
 /// of the file: a `// ignore_for_file: …, type=lint, …` line comment
 /// preceding the file's first directive or declaration.
@@ -418,27 +470,8 @@ bool _typeIsKnownProxyByName(InterfaceElement element) {
   return name == 'Fake' || name == 'Mock';
 }
 
-/// Whether [metadata] contains a bare `@override` annotation.
-///
-/// Used by [_ClassMemberCollector] to decide whether to consult the
-/// `@override`-of-reachable exemption: only annotated declarations are
-/// subject to the supertype-member lookup.
-bool _hasOverrideAnnotation(NodeList<Annotation> metadata) {
-  for (final annotation in metadata) {
-    if (annotation.arguments != null) continue;
-    final identifier = annotation.name;
-    final simpleName = identifier is SimpleIdentifier
-        ? identifier.name
-        : identifier is PrefixedIdentifier
-        ? identifier.identifier.name
-        : '';
-    if (simpleName == 'override') return true;
-  }
-  return false;
-}
-
-/// Whether [declaration]'s `@override` annotation targets a supertype
-/// member that is already reachable in [context].
+/// Whether [declaration] overrides a supertype member that is already
+/// reachable in [context].
 ///
 /// "Reachable" means either:
 ///
@@ -453,33 +486,81 @@ bool _hasOverrideAnnotation(NodeList<Annotation> metadata) {
 ///   override services the same dispatch and is therefore reachable
 ///   transitively.
 ///
-/// The supertype lookup is performed via
-/// [InterfaceElement.getInheritedMember], which uses the inheritance
-/// graph to find the most-specific overridden member. Equivalent
-/// reasoning applies to methods, operators, getters, and setters
-/// because [Name.forElement] encodes setter names with a trailing `=`
-/// and operator names with their canonical token form.
+/// The check deliberately does **not** require an explicit `@override`
+/// annotation. A declaration that shadows a supertype member is an
+/// override regardless of whether the annotation is present — and
+/// framework callbacks reached only through the supertype (Flutter's
+/// `State.createState`, `Widget.createElement`, lifecycle hooks, …) are
+/// frequently written without `@override` in real code. Keying the
+/// exemption off the annotation produced false positives for exactly
+/// those framework entry points, so the inherited member is resolved
+/// structurally instead.
 ///
-/// Returns `false` for declarations that do not carry `@override`, that
-/// are not declared inside an [InterfaceElement], or whose inherited
-/// member cannot be resolved.
+/// The supertype lookup is performed by [_inheritedSupertypeMember],
+/// which first consults [InterfaceElement.getInheritedMember] and then
+/// falls back to a by-name scan across the full
+/// `extends` / `with` / `implements` / `on` chain. Equivalent reasoning
+/// applies to methods, operators, getters, and setters.
+///
+/// Returns `false` for declarations that are not declared inside an
+/// [InterfaceElement] or whose inherited member cannot be resolved (i.e.
+/// the declaration does not override anything).
 bool _overridesReachableSupertypeMember(
   MethodDeclaration declaration,
   _CollectorContext context,
 ) {
-  if (!_hasOverrideAnnotation(declaration.metadata)) return false;
   final element = declaration.declaredFragment?.element;
   if (element == null) return false;
   final enclosing = element.enclosingElement;
   if (enclosing is! InterfaceElement) return false;
-  final name = Name.forElement(element);
-  if (name == null) return false;
-  final inherited = enclosing.getInheritedMember(name);
+  final inherited = _inheritedSupertypeMember(enclosing, element);
   if (inherited == null) return false;
   final inheritedSource =
       inherited.firstFragment.libraryFragment.source.fullName;
   if (!context.analyzedFilePaths.contains(inheritedSource)) return true;
   return context.globalReferences.contains(_declaredElement(inherited));
+}
+
+/// Resolves the supertype member that [member] (declared on [enclosing])
+/// overrides, or `null` when [member] does not override anything.
+///
+/// First consults [InterfaceElement.getInheritedMember], which walks the
+/// inheritance graph to find the most-specific overridden member. When
+/// that returns `null` — for example because the inheritance manager
+/// could not pick a single most-specific signature — the lookup falls
+/// back to a direct by-name scan over [InterfaceElement.allSupertypes],
+/// which covers the entire `extends` / `with` / `implements` / `on`
+/// chain including supertypes declared outside the analyzed set. The
+/// scan matches the candidate's shape (setter vs getter vs
+/// method/operator) so an overriding setter resolves to an inherited
+/// setter rather than a like-named getter.
+ExecutableElement? _inheritedSupertypeMember(
+  InterfaceElement enclosing,
+  ExecutableElement member,
+) {
+  final name = Name.forElement(member);
+  if (name != null) {
+    final inherited = enclosing.getInheritedMember(name);
+    if (inherited != null) return inherited;
+  }
+  final lookupName = member.name;
+  if (lookupName == null) return null;
+  for (final supertype in enclosing.allSupertypes) {
+    final superElement = supertype.element;
+    final ExecutableElement? inherited;
+    if (member is SetterElement) {
+      // `getSetter`/`getGetter` match on the simple `name`.
+      inherited = superElement.getSetter(lookupName);
+    } else if (member is GetterElement) {
+      inherited = superElement.getGetter(lookupName);
+    } else {
+      // `getMethod` matches on `lookupName`, which is the operator token
+      // (`+`, `[]`, …) for operator members and equals `name` otherwise.
+      inherited = superElement.getMethod(member.lookupName ?? lookupName);
+    }
+    if (inherited != null) return inherited;
+  }
+  return null;
 }
 
 /// Projects [element] to its declared form — the non-substituted base
