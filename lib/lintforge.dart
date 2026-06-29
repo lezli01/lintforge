@@ -1,4 +1,4 @@
-/// `anal` is a pluggable static analysis framework for Dart and Flutter
+/// `lintforge` is a pluggable static analysis framework for Dart and Flutter
 /// projects.
 ///
 /// This library re-exports the package's public surface: the [AnalyzerRule]
@@ -7,7 +7,7 @@
 /// under `lib/src/` and are not part of the stable surface.
 library;
 
-export 'src/anal_options.dart';
+export 'src/lintforge_options.dart';
 export 'src/analysis_context.dart';
 export 'src/analysis_runner.dart';
 export 'src/analyzer_rule.dart';

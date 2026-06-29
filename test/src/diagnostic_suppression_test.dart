@@ -1,7 +1,7 @@
-import 'package:anal/src/diagnostic.dart';
-import 'package:anal/src/diagnostic_suppression.dart';
-import 'package:anal/src/severity.dart';
-import 'package:anal/src/source_location.dart';
+import 'package:lintforge/src/diagnostic.dart';
+import 'package:lintforge/src/diagnostic_suppression.dart';
+import 'package:lintforge/src/severity.dart';
+import 'package:lintforge/src/source_location.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 /// Builds a [Diagnostic] with just the fields the suppressor inspects

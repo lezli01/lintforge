@@ -4,12 +4,12 @@ Guidance for Claude Code (and other AI assistants) when working in this reposito
 
 ## Project Overview
 
-`anal` is an **open-source Dart / Flutter package** providing **static code analysis** tooling. It is intended to be consumed by other Dart and Flutter projects (typically as a `dev_dependency`) to enforce code quality, lint rules, and analyzer configuration.
+`lintforge` is an **open-source Dart / Flutter package** providing **static code analysis** tooling. It is intended to be consumed by other Dart and Flutter projects (typically as a `dev_dependency`) to enforce code quality, lint rules, and analyzer configuration.
 
 - **Language:** Dart (Flutter package)
-- **Package name:** `anal`
-- **Entry point:** [lib/anal.dart](lib/anal.dart)
-- **Tests:** [test/anal_test.dart](test/anal_test.dart)
+- **Package name:** `lintforge`
+- **Entry point:** [lib/lintforge.dart](lib/lintforge.dart)
+- **Tests:** [test/lintforge_test.dart](test/lintforge_test.dart)
 - **License:** See [LICENSE](LICENSE) (open source)
 - **Changelog:** [CHANGELOG.md](CHANGELOG.md)
 
@@ -53,7 +53,7 @@ README.md     User-facing documentation.
 
 - Follow **[Effective Dart](https://dart.dev/effective-dart)** (style, documentation, usage, design).
 - Public APIs (anything in `lib/` not under `lib/src/`) **must have dartdoc comments** (`///`).
-- Keep implementation details under `lib/src/` and only re-export the intended public surface from `lib/anal.dart`.
+- Keep implementation details under `lib/src/` and only re-export the intended public surface from `lib/lintforge.dart`.
 - Code must pass `fvm dart analyze` with **zero warnings, hints, or infos**. Treat analyzer output as errors.
 - Code must be formatted with `fvm dart format .` (88-col default).
 - Prefer `final` and `const` wherever possible. Avoid mutable top-level / static state.

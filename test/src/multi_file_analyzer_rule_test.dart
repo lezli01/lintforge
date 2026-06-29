@@ -1,8 +1,8 @@
-import 'package:anal/src/diagnostic.dart';
-import 'package:anal/src/multi_file_analysis_context.dart';
-import 'package:anal/src/multi_file_analyzer_rule.dart';
-import 'package:anal/src/severity.dart';
-import 'package:anal/src/source_location.dart';
+import 'package:lintforge/src/diagnostic.dart';
+import 'package:lintforge/src/multi_file_analysis_context.dart';
+import 'package:lintforge/src/multi_file_analyzer_rule.dart';
+import 'package:lintforge/src/severity.dart';
+import 'package:lintforge/src/source_location.dart';
 import 'package:analyzer/dart/analysis/results.dart';
 import 'package:flutter_test/flutter_test.dart';
 

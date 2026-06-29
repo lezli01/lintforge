@@ -1,18 +1,18 @@
 import 'dart:io';
 
-import 'package:anal/src/anal_options.dart';
-import 'package:anal/src/analysis_context.dart';
-import 'package:anal/src/analysis_runner.dart';
-import 'package:anal/src/analyzer_rule.dart';
-import 'package:anal/src/diagnostic.dart';
-import 'package:anal/src/multi_file_analysis_context.dart';
-import 'package:anal/src/multi_file_analyzer_rule.dart';
-import 'package:anal/src/rule_registry.dart';
-import 'package:anal/src/rules/unused_class_rule.dart';
-import 'package:anal/src/rules/unused_function_rule.dart';
-import 'package:anal/src/rules/unused_source_file_rule.dart';
-import 'package:anal/src/severity.dart';
-import 'package:anal/src/source_location.dart';
+import 'package:lintforge/src/lintforge_options.dart';
+import 'package:lintforge/src/analysis_context.dart';
+import 'package:lintforge/src/analysis_runner.dart';
+import 'package:lintforge/src/analyzer_rule.dart';
+import 'package:lintforge/src/diagnostic.dart';
+import 'package:lintforge/src/multi_file_analysis_context.dart';
+import 'package:lintforge/src/multi_file_analyzer_rule.dart';
+import 'package:lintforge/src/rule_registry.dart';
+import 'package:lintforge/src/rules/unused_class_rule.dart';
+import 'package:lintforge/src/rules/unused_function_rule.dart';
+import 'package:lintforge/src/rules/unused_source_file_rule.dart';
+import 'package:lintforge/src/severity.dart';
+import 'package:lintforge/src/source_location.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:path/path.dart' as p;
 
@@ -114,7 +114,7 @@ void main() {
     late String fixturePath;
 
     setUp(() {
-      tempDir = Directory.systemTemp.createTempSync('anal_runner_test_');
+      tempDir = Directory.systemTemp.createTempSync('lintforge_runner_test_');
       final fixture = File(p.join(tempDir.path, 'fixture.dart'));
       fixture.writeAsStringSync('void main() {}\n');
       fixturePath = p.normalize(p.absolute(fixture.path));
@@ -130,7 +130,7 @@ void main() {
       final registry = RuleRegistry()..register(_AlwaysFiresRule());
       final runner = AnalysisRunner(
         registry: registry,
-        options: AnalOptions(
+        options: LintforgeOptions(
           includePaths: [tempDir.path],
           excludePaths: const [],
           enabledRuleIds: const <String>{},
@@ -153,7 +153,7 @@ void main() {
 
     setUp(() {
       savedCwd = Directory.current.path;
-      tempDir = Directory.systemTemp.createTempSync('anal_runner_exclude_');
+      tempDir = Directory.systemTemp.createTempSync('lintforge_runner_exclude_');
       Directory.current = tempDir.path;
     });
 
@@ -179,7 +179,7 @@ void main() {
       final registry = RuleRegistry()..register(_AlwaysFiresRule());
       final runner = AnalysisRunner(
         registry: registry,
-        options: AnalOptions(
+        options: LintforgeOptions(
           includePaths: [tempDir.path],
           excludePaths: excludePaths,
           enabledRuleIds: const <String>{},
@@ -221,7 +221,7 @@ void main() {
     });
 
     test(
-      'AnalOptions.defaultExcludePaths excludes generated files and tool/build caches but keeps keep.dart',
+      'LintforgeOptions.defaultExcludePaths excludes generated files and tool/build caches but keeps keep.dart',
       () async {
         final keep = writeFile('keep.dart');
         writeFile('foo.g.dart');
@@ -236,7 +236,7 @@ void main() {
         writeFile(p.join('build', 'generated', 'thing.dart'));
         writeFile(p.join('nested', 'build', 'deep.dart'));
 
-        final analyzed = await analyze(AnalOptions.defaultExcludePaths);
+        final analyzed = await analyze(LintforgeOptions.defaultExcludePaths);
 
         expect(analyzed, {p.normalize(p.absolute(keep.path))});
       },
@@ -271,7 +271,7 @@ void main() {
     late Directory tempDir;
 
     setUp(() {
-      tempDir = Directory.systemTemp.createTempSync('anal_runner_multi_');
+      tempDir = Directory.systemTemp.createTempSync('lintforge_runner_multi_');
     });
 
     tearDown(() {
@@ -294,7 +294,7 @@ void main() {
       final registry = RuleRegistry()..registerMultiFile(multi);
       final runner = AnalysisRunner(
         registry: registry,
-        options: AnalOptions(
+        options: LintforgeOptions(
           includePaths: [tempDir.path],
           excludePaths: const [],
           enabledRuleIds: const <String>{},
@@ -322,7 +322,7 @@ void main() {
         ..registerMultiFile(_CapturingMultiFileRule(callLog: callLog));
       final runner = AnalysisRunner(
         registry: registry,
-        options: AnalOptions(
+        options: LintforgeOptions(
           includePaths: [tempDir.path],
           excludePaths: const [],
           enabledRuleIds: const <String>{},
@@ -339,7 +339,7 @@ void main() {
       final registry = RuleRegistry()..registerMultiFile(multi);
       final runner = AnalysisRunner(
         registry: registry,
-        options: AnalOptions(
+        options: LintforgeOptions(
           includePaths: [tempDir.path],
           excludePaths: const [],
           enabledRuleIds: const <String>{},
@@ -361,7 +361,7 @@ void main() {
           ..registerMultiFile(_ThrowingMultiFileRule());
         final runner = AnalysisRunner(
           registry: registry,
-          options: AnalOptions(
+          options: LintforgeOptions(
             includePaths: [tempDir.path],
             excludePaths: const [],
             enabledRuleIds: const <String>{},
@@ -385,7 +385,7 @@ void main() {
 
     setUp(() {
       tempDir = Directory.systemTemp.createTempSync(
-        'anal_runner_excluded_ref_',
+        'lintforge_runner_excluded_ref_',
       );
     });
 
@@ -413,7 +413,7 @@ void main() {
         ..registerMultiFile(multi);
       final runner = AnalysisRunner(
         registry: registry,
-        options: AnalOptions(
+        options: LintforgeOptions(
           includePaths: [tempDir.path],
           excludePaths: const ['*.g.dart'],
           enabledRuleIds: const <String>{},
@@ -442,7 +442,7 @@ void main() {
         final registry = RuleRegistry()..registerMultiFile(multi);
         final runner = AnalysisRunner(
           registry: registry,
-          options: AnalOptions(
+          options: LintforgeOptions(
             includePaths: [tempDir.path],
             excludePaths: const [],
             enabledRuleIds: const <String>{},
@@ -470,7 +470,7 @@ void main() {
     setUp(() {
       savedCwd = Directory.current.path;
       tempDir = Directory.systemTemp.createTempSync(
-        'anal_runner_defaults_regression_',
+        'lintforge_runner_defaults_regression_',
       );
       Directory.current = tempDir.path;
     });
@@ -504,9 +504,9 @@ void main() {
           ..registerMultiFile(UnusedSourceFileRule());
         final runner = AnalysisRunner(
           registry: registry,
-          options: AnalOptions(
+          options: LintforgeOptions(
             includePaths: [tempDir.path],
-            excludePaths: AnalOptions.defaultExcludePaths,
+            excludePaths: LintforgeOptions.defaultExcludePaths,
             enabledRuleIds: const <String>{},
           ),
         );
@@ -525,7 +525,7 @@ void main() {
     late Directory tempDir;
 
     setUp(() {
-      tempDir = Directory.systemTemp.createTempSync('anal_runner_nesting_');
+      tempDir = Directory.systemTemp.createTempSync('lintforge_runner_nesting_');
     });
 
     tearDown(() {
@@ -551,7 +551,7 @@ void main() {
     Future<List<Diagnostic>> run() async {
       final runner = AnalysisRunner(
         registry: buildRegistry(),
-        options: AnalOptions(
+        options: LintforgeOptions(
           includePaths: [tempDir.path],
           excludePaths: const [],
           enabledRuleIds: const <String>{},
@@ -642,7 +642,7 @@ class _DeadClass {}
 
         final runner = AnalysisRunner(
           registry: buildRegistry(),
-          options: AnalOptions(
+          options: LintforgeOptions(
             includePaths: [tempDir.path],
             excludePaths: const [],
             enabledRuleIds: const <String>{'unused_class', 'unused_function'},

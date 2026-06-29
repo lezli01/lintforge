@@ -1,5 +1,5 @@
 name: unused_function_sample
-description: Sample project exercising the unused_function rule of the anal package.
+description: Sample project exercising the unused_function rule of the lintforge package.
 publish_to: none
 version: 0.0.0
 
@@ -10,5 +10,5 @@ environment:
 dependencies:
   flutter:
     sdk: flutter
-  anal:
+  lintforge:
     path: ../..

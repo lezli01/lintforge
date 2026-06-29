@@ -10,7 +10,7 @@
 //
 // The SDK's built-in `unused_element` lint is disabled for this file
 // because it would fire on the very declarations the sample is built to
-// demonstrate; those declarations are still flagged by the `anal`
+// demonstrate; those declarations are still flagged by the `lintforge`
 // runner under the `unused_function` rule, which is the point of the
 // sample.
 // ignore_for_file: unused_element

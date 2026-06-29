@@ -23,7 +23,7 @@ void main() {
       () async {
         final result = await Process.run(_dartExecutable(), [
           'run',
-          'anal',
+          'lintforge',
           '--list-rules',
         ]);
 
@@ -74,7 +74,7 @@ void main() {
       () async {
         final result = await Process.run(_dartExecutable(), [
           'run',
-          'anal',
+          'lintforge',
           '--list-rules',
           '--help',
         ]);

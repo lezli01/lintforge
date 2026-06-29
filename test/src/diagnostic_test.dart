@@ -1,6 +1,6 @@
-import 'package:anal/src/diagnostic.dart';
-import 'package:anal/src/severity.dart';
-import 'package:anal/src/source_location.dart';
+import 'package:lintforge/src/diagnostic.dart';
+import 'package:lintforge/src/severity.dart';
+import 'package:lintforge/src/source_location.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 void main() {

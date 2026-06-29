@@ -1,16 +1,16 @@
-import 'package:anal/anal.dart';
+import 'package:lintforge/lintforge.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 void main() {
   test(
-    'public surface is exported and constructible from package:anal/anal.dart',
+    'public surface is exported and constructible from package:lintforge/lintforge.dart',
     () {
       final registry = RuleRegistry();
-      const options = AnalOptions.defaults();
+      const options = LintforgeOptions.defaults();
       final runner = AnalysisRunner(registry: registry, options: options);
 
       expect(registry, isA<RuleRegistry>());
-      expect(options, isA<AnalOptions>());
+      expect(options, isA<LintforgeOptions>());
       expect(runner, isA<AnalysisRunner>());
 
       expect(Severity.error, isA<Severity>());

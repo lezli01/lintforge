@@ -128,7 +128,7 @@ part 'unused_function/top_level_function_collector.dart';
 ///   unnamed factory forwarding to a generated `_$Foo`, and one named
 ///   factory per union case — that are only invoked from generated
 ///   code (typically a `*.freezed.dart` part file). Consumers of
-///   `anal` often run the rule before code generation has happened,
+///   `lintforge` often run the rule before code generation has happened,
 ///   so the source AST shows those constructors as unreferenced even
 ///   though they will be reached from generated output. The rule
 ///   skips every constructor candidate of such a class to avoid that
@@ -594,7 +594,7 @@ Element _declaredElement(Element element) => element.baseElement;
 /// boilerplate constructors — a private generative `Foo._()`, an
 /// unnamed factory that forwards to a generated `_$Foo`, and one named
 /// factory per union case — that are only invoked from generated code
-/// (typically `*.freezed.dart` part files). Because consumers of `anal`
+/// (typically `*.freezed.dart` part files). Because consumers of `lintforge`
 /// often run the rule before code generation has happened, those
 /// constructors look unreferenced in the source AST even though they
 /// will be reached from generated output. Skipping them at the

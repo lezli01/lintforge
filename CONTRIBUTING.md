@@ -1,6 +1,6 @@
 # Contributing
 
-Thanks for taking the time to improve `anal`.
+Thanks for taking the time to improve `lintforge`.
 
 ## Development Setup
 
@@ -34,6 +34,6 @@ The package should lint cleanly with zero warnings, hints, or infos.
 
 ## Public API Changes
 
-Anything exported from `lib/anal.dart` is public API. New public APIs need
+Anything exported from `lib/lintforge.dart` is public API. New public APIs need
 dartdoc comments and tests. Breaking changes require a clear changelog note
 and should be avoided while a smaller compatible change can solve the problem.

@@ -1,7 +1,7 @@
 import 'dart:convert';
 import 'dart:io';
 
-import 'package:anal/anal.dart';
+import 'package:lintforge/lintforge.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:path/path.dart' as p;
 
@@ -191,7 +191,7 @@ void main() {
     late Directory tempRoot;
 
     setUp(() {
-      tempRoot = Directory.systemTemp.createTempSync('anal_samples_test_');
+      tempRoot = Directory.systemTemp.createTempSync('lintforge_samples_test_');
     });
 
     tearDown(() {
@@ -260,7 +260,7 @@ void main() {
 
         final runner = AnalysisRunner(
           registry: _buildCliRegistry(),
-          options: AnalOptions(
+          options: LintforgeOptions(
             includePaths: List<String>.unmodifiable(destIncludePaths),
             excludePaths: List<String>.unmodifiable(
               _sampleExcludePaths[sampleName] ?? const <String>[],

@@ -1,6 +1,6 @@
 # Code of Conduct
 
-`anal` aims to be a welcoming, practical project for people building better
+`lintforge` aims to be a welcoming, practical project for people building better
 Dart and Flutter tooling.
 
 ## Expected Behavior

@@ -1,10 +1,10 @@
-# anal
+# lintforge
 
-[![CI](https://github.com/lezli01/anal/actions/workflows/ci.yml/badge.svg?branch=master)](https://github.com/lezli01/anal/actions/workflows/ci.yml)
-[![Release Please](https://github.com/lezli01/anal/actions/workflows/release-please.yml/badge.svg?branch=master)](https://github.com/lezli01/anal/actions/workflows/release-please.yml)
+[![CI](https://github.com/lezli01/lintforge/actions/workflows/ci.yml/badge.svg?branch=master)](https://github.com/lezli01/lintforge/actions/workflows/ci.yml)
+[![Release Please](https://github.com/lezli01/lintforge/actions/workflows/release-please.yml/badge.svg?branch=master)](https://github.com/lezli01/lintforge/actions/workflows/release-please.yml)
 [![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
 
-`anal` is a pluggable static analysis framework for Dart and Flutter projects.
+`lintforge` is a pluggable static analysis framework for Dart and Flutter projects.
 It provides the contracts, registry, runner, built-in rules, and CLI that
 custom analyzer rules plug into, so teams can implement project-specific checks
 as plain Dart classes without writing a full analyzer plugin.
@@ -15,23 +15,23 @@ declaration detection and `const` suggestions, are planned for future releases.
 
 ## Status
 
-`anal` is pre-1.0.0. Public APIs may change between minor versions while the
+`lintforge` is pre-1.0.0. Public APIs may change between minor versions while the
 framework matures. Pin a specific version in your `pubspec.yaml` if you need
 repeatable behavior.
 
 ## Installation
 
-Add `anal` as a development dependency:
+Add `lintforge` as a development dependency:
 
 ```sh
-flutter pub add --dev anal
+flutter pub add --dev lintforge
 ```
 
 Or edit `pubspec.yaml` directly:
 
 ```yaml
 dev_dependencies:
-  anal: <version>
+  lintforge: <version>
 ```
 
 ## CLI Usage
@@ -39,10 +39,10 @@ dev_dependencies:
 Run the analyzer against the current project:
 
 ```sh
-dart run anal [options] [paths...]
+dart run lintforge [options] [paths...]
 ```
 
-When no paths are provided, `anal` inspects `lib/`, `bin/`, and `test/`.
+When no paths are provided, `lintforge` inspects `lib/`, `bin/`, and `test/`.
 
 Options:
 
@@ -56,10 +56,10 @@ Options:
 - `--no-default-excludes`: disable the built-in default exclude patterns.
   Use `--exclude` to list any patterns you still want excluded.
 
-By default, `anal` excludes generated files and tool/build caches that
+By default, `lintforge` excludes generated files and tool/build caches that
 consumer projects almost never want to lint: `*.g.dart`, `*.freezed.dart`,
 `**/.dart_tool/**`, and `**/build/**`. The two directory patterns mirror
-the canonical Dart/Flutter ignore set, so running `anal` against a project
+the canonical Dart/Flutter ignore set, so running `lintforge` against a project
 root will not flag Flutter-generated registrants under `.dart_tool/` or
 build artefacts under `build/`. Exclude patterns are matched against the
 file's basename, its path relative to the current working directory, and
@@ -67,14 +67,14 @@ its absolute path; any match excludes the file. To opt out of the defaults
 entirely:
 
 ```sh
-dart run anal --no-default-excludes
+dart run lintforge --no-default-excludes
 ```
 
-List the rules shipped with `anal` — each entry shows the rule id,
+List the rules shipped with `lintforge` — each entry shows the rule id,
 severity, and a one-line description, one rule per line:
 
 ```sh
-dart run anal --list-rules
+dart run lintforge --list-rules
 ```
 
 Exit codes:
@@ -85,7 +85,7 @@ Exit codes:
 
 ## Excluded Files as Reference Sources
 
-`--exclude` (and `excludePaths` in `AnalOptions`) suppresses **diagnostic
+`--exclude` (and `excludePaths` in `LintforgeOptions`) suppresses **diagnostic
 reporting** for matched files. It does **not** remove them from analysis:
 the runner still discovers, parses, and resolves every excluded file
 through `package:analyzer` and feeds the resulting compilation unit into
@@ -132,7 +132,7 @@ Per built-in rule:
 
 ## Built-In Rules
 
-`anal` ships with the following rules enabled by default. To turn one off, pass
+`lintforge` ships with the following rules enabled by default. To turn one off, pass
 `--rules` with a list that omits it.
 
 ### `unused_function`
@@ -366,7 +366,7 @@ Implement `AnalyzerRule`, register it with a `RuleRegistry`, and pass the
 registry to `AnalysisRunner`:
 
 ```dart
-import 'package:anal/anal.dart';
+import 'package:lintforge/lintforge.dart';
 
 class MyRule extends AnalyzerRule {
   @override
@@ -386,7 +386,7 @@ class MyRule extends AnalyzerRule {
 
 Future<void> main() async {
   final registry = RuleRegistry()..register(MyRule());
-  const options = AnalOptions.defaults();
+  const options = LintforgeOptions.defaults();
   final runner = AnalysisRunner(registry: registry, options: options);
 
   final diagnostics = await runner.run();
@@ -428,7 +428,7 @@ Run any sample from the repository root, for example:
 
 ```sh
 fvm dart pub get --directory samples/unused_function
-fvm dart run anal samples/unused_function/lib
+fvm dart run lintforge samples/unused_function/lib
 ```
 
 ## Development
@@ -455,4 +455,4 @@ See [CONTRIBUTING.md](CONTRIBUTING.md) for contribution workflow details and
 
 ## License
 
-`anal` is available under the [MIT License](LICENSE).
+`lintforge` is available under the [MIT License](LICENSE).

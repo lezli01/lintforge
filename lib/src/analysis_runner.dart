@@ -6,7 +6,7 @@ import 'package:glob/glob.dart';
 import 'package:glob/list_local_fs.dart';
 import 'package:path/path.dart' as p;
 
-import 'anal_options.dart';
+import 'lintforge_options.dart';
 import 'analysis_context.dart';
 import 'analyzer_rule.dart';
 import 'diagnostic.dart';
@@ -34,14 +34,14 @@ class AnalysisRunner {
 
   /// Configuration controlling which paths are inspected and which rules are
   /// enabled for this run.
-  final AnalOptions options;
+  final LintforgeOptions options;
 
   /// Creates a runner bound to [registry] and [options].
   AnalysisRunner({required this.registry, required this.options});
 
-  /// Resolves [AnalOptions.includePaths] to a concrete list of `.dart` files,
+  /// Resolves [LintforgeOptions.includePaths] to a concrete list of `.dart` files,
   /// partitions them into a reportable subset (everything not matched by
-  /// [AnalOptions.excludePaths]) and a supplementary subset (the files the
+  /// [LintforgeOptions.excludePaths]) and a supplementary subset (the files the
   /// exclude globs filtered out), parses each file in *both* sets through
   /// `package:analyzer` so cross-file rules can resolve references into
   /// excluded files, dispatches each enabled single-file rule against
@@ -142,9 +142,9 @@ class AnalysisRunner {
   }
 
   /// Returns the absolute, normalized `.dart` paths discovered under
-  /// [AnalOptions.includePaths], partitioned into:
+  /// [LintforgeOptions.includePaths], partitioned into:
   ///
-  /// * `reportable` — files that survived the [AnalOptions.excludePaths]
+  /// * `reportable` — files that survived the [LintforgeOptions.excludePaths]
   ///   globs and are therefore eligible for single-file rule dispatch and
   ///   diagnostic emission, and
   /// * `supplementary` — files the exclude globs filtered out. The frame

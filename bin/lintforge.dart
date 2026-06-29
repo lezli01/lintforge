@@ -1,13 +1,13 @@
 import 'dart:io';
 
-import 'package:anal/src/anal_options.dart';
-import 'package:anal/src/analysis_runner.dart';
-import 'package:anal/src/reporter.dart';
-import 'package:anal/src/rule_registry.dart';
-import 'package:anal/src/rules/unused_class_rule.dart';
-import 'package:anal/src/rules/unused_function_rule.dart';
-import 'package:anal/src/rules/unused_source_file_rule.dart';
-import 'package:anal/src/severity.dart';
+import 'package:lintforge/src/lintforge_options.dart';
+import 'package:lintforge/src/analysis_runner.dart';
+import 'package:lintforge/src/reporter.dart';
+import 'package:lintforge/src/rule_registry.dart';
+import 'package:lintforge/src/rules/unused_class_rule.dart';
+import 'package:lintforge/src/rules/unused_function_rule.dart';
+import 'package:lintforge/src/rules/unused_source_file_rule.dart';
+import 'package:lintforge/src/severity.dart';
 import 'package:args/args.dart';
 
 const String _version = '0.3.8'; // x-release-please-version
@@ -103,20 +103,20 @@ ArgParser _buildArgParser() {
     );
 }
 
-AnalOptions _buildOptions(ArgResults parsed) {
+LintforgeOptions _buildOptions(ArgResults parsed) {
   final paths = parsed.rest;
   final excludes = parsed['exclude'] as List<String>;
   final rulesArg = parsed['rules'] as String?;
   final useDefaults = parsed['default-excludes'] as bool;
 
-  const defaults = AnalOptions.defaults();
+  const defaults = LintforgeOptions.defaults();
 
   final includePaths = paths.isEmpty
       ? defaults.includePaths
       : List<String>.unmodifiable(paths);
 
   final excludePaths = List<String>.unmodifiable([
-    if (useDefaults) ...AnalOptions.defaultExcludePaths,
+    if (useDefaults) ...LintforgeOptions.defaultExcludePaths,
     ...excludes,
   ]);
 
@@ -129,7 +129,7 @@ AnalOptions _buildOptions(ArgResults parsed) {
     );
   }
 
-  return AnalOptions(
+  return LintforgeOptions(
     includePaths: includePaths,
     excludePaths: excludePaths,
     enabledRuleIds: enabledRuleIds,
@@ -137,7 +137,7 @@ AnalOptions _buildOptions(ArgResults parsed) {
 }
 
 String _usage(ArgParser parser) {
-  return 'Usage: dart run anal [options] [paths...]\n'
+  return 'Usage: dart run lintforge [options] [paths...]\n'
       '\n'
       'Static analysis frame for Dart and Flutter projects.\n'
       '\n'

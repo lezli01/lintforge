@@ -31,7 +31,7 @@ void keptAliveByExcludedRef() {}
 // code generator emits boilerplate constructors — a private generative
 // `Foo._()`, an unnamed factory forwarding to a generated `_$Foo`, and one
 // named factory per union case — that are only invoked from generated
-// `*.freezed.dart` part files. Consumers of `anal` typically run the
+// `*.freezed.dart` part files. Consumers of `lintforge` typically run the
 // rule before code generation has happened, so the AST shows those
 // constructors as unreferenced. The rule recognises freezed-related
 // annotations on the enclosing class and skips every constructor

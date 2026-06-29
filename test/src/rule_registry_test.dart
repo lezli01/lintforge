@@ -1,10 +1,10 @@
-import 'package:anal/src/analysis_context.dart';
-import 'package:anal/src/analyzer_rule.dart';
-import 'package:anal/src/diagnostic.dart';
-import 'package:anal/src/multi_file_analysis_context.dart';
-import 'package:anal/src/multi_file_analyzer_rule.dart';
-import 'package:anal/src/rule_registry.dart';
-import 'package:anal/src/severity.dart';
+import 'package:lintforge/src/analysis_context.dart';
+import 'package:lintforge/src/analyzer_rule.dart';
+import 'package:lintforge/src/diagnostic.dart';
+import 'package:lintforge/src/multi_file_analysis_context.dart';
+import 'package:lintforge/src/multi_file_analyzer_rule.dart';
+import 'package:lintforge/src/rule_registry.dart';
+import 'package:lintforge/src/severity.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 class _StubRule implements AnalyzerRule {

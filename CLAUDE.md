@@ -6,12 +6,12 @@ Check @LANGUAGE.md for Dart specific knowledge.
 
 ## Project Overview
 
-`anal` is an **open-source Dart / Flutter package** providing **static code analysis** tooling. It is intended to be consumed by other Dart and Flutter projects (typically as a `dev_dependency`) to enforce code quality, lint rules, and analyzer configuration.
+`lintforge` is an **open-source Dart / Flutter package** providing **static code analysis** tooling. It is intended to be consumed by other Dart and Flutter projects (typically as a `dev_dependency`) to enforce code quality, lint rules, and analyzer configuration.
 
 - **Language:** Dart (Flutter package)
-- **Package name:** `anal`
-- **Entry point:** [lib/anal.dart](lib/anal.dart)
-- **Tests:** [test/anal_test.dart](test/anal_test.dart)
+- **Package name:** `lintforge`
+- **Entry point:** [lib/lintforge.dart](lib/lintforge.dart)
+- **Tests:** [test/lintforge_test.dart](test/lintforge_test.dart)
 - **License:** See [LICENSE](LICENSE) (open source)
 - **Changelog:** [CHANGELOG.md](CHANGELOG.md)
 
@@ -55,7 +55,7 @@ README.md     User-facing documentation.
 
 - Follow **[Effective Dart](https://dart.dev/effective-dart)** (style, documentation, usage, design).
 - Public APIs (anything in `lib/` not under `lib/src/`) **must have dartdoc comments** (`///`).
-- Keep implementation details under `lib/src/` and only re-export the intended public surface from `lib/anal.dart`.
+- Keep implementation details under `lib/src/` and only re-export the intended public surface from `lib/lintforge.dart`.
 - Code must pass `fvm dart analyze` with **zero warnings, hints, or infos**. Treat analyzer output as errors.
 - Code must be formatted with `fvm dart format .` (88-col default).
 - Prefer `final` and `const` wherever possible. Avoid mutable top-level / static state.
@@ -84,7 +84,7 @@ The [samples/](samples/) directory contains **one self-contained sample
 project per built-in rule shipped under [lib/src/rules/](lib/src/rules/),
 plus an `all_rules` sample** that exercises every built-in rule together.
 Each sample is a real `pub get`-resolved Dart/Flutter package that
-path-depends on the root `anal` package and whose `README.md` documents
+path-depends on the root `lintforge` package and whose `README.md` documents
 the exact positive (MUST be flagged) and negative (MUST NOT be flagged)
 cases for the rule it covers.
 
@@ -192,7 +192,7 @@ Closes: #42
 
 - The commit message *is* the changelog entry. Write it from the consumer's perspective — describe what changed for users of the package, not the internal implementation.
 - Only `feat:` and `fix:` (and `!`/`BREAKING CHANGE:` footers) produce changelog entries by default. Other types (`docs`, `chore`, `ci`, `refactor`, `test`, `build`, `style`, `perf`, `revert`) are intentionally excluded.
-- A "release PR" opened by release-please collects the pending entries into the next `## [X.Y.Z]` section, bumps `version:` in [pubspec.yaml](pubspec.yaml), and bumps the `_version` marker in [bin/anal.dart](bin/anal.dart) via the `x-release-please-version` comment. Merging that PR cuts the release.
+- A "release PR" opened by release-please collects the pending entries into the next `## [X.Y.Z]` section, bumps `version:` in [pubspec.yaml](pubspec.yaml), and bumps the `_version` marker in [bin/lintforge.dart](bin/lintforge.dart) via the `x-release-please-version` comment. Merging that PR cuts the release.
 - Hand-editing past `## [X.Y.Z]` sections is fine for prose / typo fixes, but never re-version, re-date, or remove a published entry — correct mistakes by adding a follow-up entry in a later release.
 - Do **not** add a manual `## [Unreleased]` section. Past content is folded into the most recent release; new content arrives via the next release PR.
 
@@ -204,7 +204,7 @@ Closes: #42
   2. release-please opens or updates the release PR — review CHANGELOG + version bumps there.
   3. Merging the release PR creates the GitHub release and `vX.Y.Z` tag.
   4. The release-please workflow dispatches [publish.yml](.github/workflows/publish.yml) against the new tag, which publishes to pub.dev via OIDC.
-- Do **not** manually bump `version:` in [pubspec.yaml](pubspec.yaml) or `_version` in [bin/anal.dart](bin/anal.dart) — the release PR does it. The `// x-release-please-version` comment in `bin/anal.dart` and the `extra-files` block in [release-please-config.json](release-please-config.json) keep them in sync.
+- Do **not** manually bump `version:` in [pubspec.yaml](pubspec.yaml) or `_version` in [bin/lintforge.dart](bin/lintforge.dart) — the release PR does it. The `// x-release-please-version` comment in `bin/lintforge.dart` and the `extra-files` block in [release-please-config.json](release-please-config.json) keep them in sync.
 - Validate locally with `fvm dart pub publish --dry-run` before merging the release PR if you want a final check.
 - Tag releases as `vX.Y.Z` matching the pubspec version.
 
@@ -218,7 +218,7 @@ Closes: #42
 6. **Don't edit `CHANGELOG.md` retroactively** for already-published versions; add a new entry instead.
 7. **Don't add license headers per file** unless the project policy changes — the root [LICENSE](LICENSE) covers the package.
 8. **Be mindful of `pubspec.yaml` fields** required by pub.dev for scoring: `description` (60–180 chars), `homepage`/`repository`, `version`, `environment`. The current `description` is a placeholder and should be improved before publishing.
-9. **Keep the CLI `_version` constant in sync with `pubspec.yaml`.** [bin/anal.dart](bin/anal.dart) hardcodes a `_version` string used by `dart run anal --version`. Whenever `version:` in [pubspec.yaml](pubspec.yaml) changes (release commits, release-please PRs), update `_version` in the same commit, or `--version` will report a stale value.
+9. **Keep the CLI `_version` constant in sync with `pubspec.yaml`.** [bin/lintforge.dart](bin/lintforge.dart) hardcodes a `_version` string used by `dart run lintforge --version`. Whenever `version:` in [pubspec.yaml](pubspec.yaml) changes (release commits, release-please PRs), update `_version` in the same commit, or `--version` will report a stale value.
 
 ## Dart Language Features Rules Must Be Aware Of
 
@@ -323,20 +323,20 @@ rule, walk this list before opening a PR.
 
 ## Post-Implementation Verification
 
-After any implementation — rule changes, new rules, sample updates, or analysis runner changes — run the `anal-probe` skill to confirm all sample projects still emit exactly the expected diagnostics and nothing broke:
+After any implementation — rule changes, new rules, sample updates, or analysis runner changes — run the `lintforge-probe` skill to confirm all sample projects still emit exactly the expected diagnostics and nothing broke:
 
 ```
-/anal-probe
+/lintforge-probe
 ```
 
-This runs `anal` directly on every sample under `samples/` and compares findings against the fixture in `test/samples_test.dart`. It catches unexpected extra findings, missing expected findings, and `_internal` errors that indicate rule bugs.
+This runs `lintforge` directly on every sample under `samples/` and compares findings against the fixture in `test/samples_test.dart`. It catches unexpected extra findings, missing expected findings, and `_internal` errors that indicate rule bugs.
 
 ## Quick Pre-Commit Checklist
 
 - [ ] `fvm dart format .` — clean
 - [ ] `fvm dart analyze` — zero issues
 - [ ] `fvm flutter test` — all green
-- [ ] `/anal-probe` — all samples pass
+- [ ] `/lintforge-probe` — all samples pass
 - [ ] CHANGELOG updated (if user-visible)
 - [ ] README updated (if behavior, API, or bundled rules changed)
 - [ ] `samples/` and `test/samples_test.dart` updated for any rule changes

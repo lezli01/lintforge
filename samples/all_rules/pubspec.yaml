@@ -1,6 +1,6 @@
 name: all_rules_sample
 description: >-
-  Sample project that exercises every built-in rule shipped by the `anal`
+  Sample project that exercises every built-in rule shipped by the `lintforge`
   static-analysis package in a single tree. Not published to pub.dev.
 publish_to: none
 version: 0.0.0
@@ -12,5 +12,5 @@ environment:
 dependencies:
   flutter:
     sdk: flutter
-  anal:
+  lintforge:
     path: ../..

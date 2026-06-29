@@ -1,5 +1,5 @@
 # This sample intentionally contains unused private declarations and other
-# patterns that exist to trigger (or deliberately not trigger) the `anal`
+# patterns that exist to trigger (or deliberately not trigger) the `lintforge`
 # `unused_class` rule. The standard Dart analyzer lints that overlap with the
 # scenarios under test are silenced here so that the file demonstrates the
 # rule in isolation.

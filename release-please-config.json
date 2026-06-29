@@ -9,12 +9,12 @@
   "prerelease": false,
   "packages": {
     ".": {
-      "package-name": "anal",
+      "package-name": "lintforge",
       "changelog-path": "CHANGELOG.md",
       "extra-files": [
         {
           "type": "generic",
-          "path": "bin/anal.dart"
+          "path": "bin/lintforge.dart"
         }
       ]
     }

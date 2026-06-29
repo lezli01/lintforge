@@ -2,10 +2,10 @@ import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
 
-import 'package:anal/src/diagnostic.dart';
-import 'package:anal/src/reporter.dart';
-import 'package:anal/src/severity.dart';
-import 'package:anal/src/source_location.dart';
+import 'package:lintforge/src/diagnostic.dart';
+import 'package:lintforge/src/reporter.dart';
+import 'package:lintforge/src/severity.dart';
+import 'package:lintforge/src/source_location.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 /// Drives [body] against a [ConsoleReporter] backed by an in-memory

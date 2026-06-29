@@ -1,7 +1,7 @@
 name: unused_source_file_sample
 description: >-
   Sample project that exercises the `unused_source_file` multi-file rule from
-  the `anal` static-analysis package. Not published to pub.dev.
+  the `lintforge` static-analysis package. Not published to pub.dev.
 publish_to: none
 version: 0.0.0
 
@@ -12,5 +12,5 @@ environment:
 dependencies:
   flutter:
     sdk: flutter
-  anal:
+  lintforge:
     path: ../..

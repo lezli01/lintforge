@@ -1,9 +1,9 @@
-# anal — `unused_class` sample
+# lintforge — `unused_class` sample
 
 This is a self-contained Dart/Flutter sample project that exercises the
 [`unused_class`](../../lib/src/rules/unused_class_rule.dart) rule shipped by
-the root [`anal`](../..) package. It is **not** published to pub.dev
-(`publish_to: 'none'`) and depends on `anal` via a relative path.
+the root [`lintforge`](../..) package. It is **not** published to pub.dev
+(`publish_to: 'none'`) and depends on `lintforge` via a relative path.
 
 The sample is structured so that every positive case is annotated with `(P*)`
 and every negative case with `(N*)`, matching the comments in
@@ -13,7 +13,7 @@ and every negative case with `(N*)`, matching the comments in
 
 ```
 samples/unused_class/
-├── pubspec.yaml                       # path-deps on ../.. (the root anal package)
+├── pubspec.yaml                       # path-deps on ../.. (the root lintforge package)
 ├── README.md                          # this file
 └── lib/
     ├── unused_class_sample.dart       # positive + negative cases for unused_class
@@ -26,14 +26,14 @@ From the **repository root**:
 
 ```sh
 fvm flutter pub get -C samples/unused_class
-fvm dart run anal samples/unused_class/lib
+fvm dart run lintforge samples/unused_class/lib
 ```
 
 To restrict the run to just this rule (useful when comparing output against
 the table below):
 
 ```sh
-fvm dart run anal --rules=unused_class samples/unused_class/lib
+fvm dart run lintforge --rules=unused_class samples/unused_class/lib
 ```
 
 ## Expected diagnostics

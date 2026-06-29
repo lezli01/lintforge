@@ -1,9 +1,9 @@
 import 'dart:io';
 
-import 'package:anal/src/diagnostic.dart';
-import 'package:anal/src/multi_file_analysis_context.dart';
-import 'package:anal/src/rules/unused_function_rule.dart';
-import 'package:anal/src/severity.dart';
+import 'package:lintforge/src/diagnostic.dart';
+import 'package:lintforge/src/multi_file_analysis_context.dart';
+import 'package:lintforge/src/rules/unused_function_rule.dart';
+import 'package:lintforge/src/severity.dart';
 import 'package:analyzer/dart/analysis/analysis_context_collection.dart';
 import 'package:analyzer/dart/analysis/results.dart';
 import 'package:flutter_test/flutter_test.dart';

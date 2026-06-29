@@ -1,5 +1,5 @@
-name: anal_unused_class_sample
-description: Sample project exercising the anal unused_class rule with positive and negative cases.
+name: lintforge_unused_class_sample
+description: Sample project exercising the lintforge unused_class rule with positive and negative cases.
 publish_to: 'none'
 
 environment:
@@ -11,5 +11,5 @@ dependencies:
     sdk: flutter
 
 dev_dependencies:
-  anal:
+  lintforge:
     path: ../..

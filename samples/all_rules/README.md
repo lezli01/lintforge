@@ -1,7 +1,7 @@
 # `all_rules` sample
 
 A self-contained Dart/Flutter package that exercises **every** built-in rule
-shipped by the [`anal`](../..) package in a single project, with the same
+shipped by the [`lintforge`](../..) package in a single project, with the same
 breadth of positive and negative cases that each per-rule sample covers.
 
 The sample exists so consumers (and the rules' own contributors) can see all
@@ -12,7 +12,7 @@ output for a mixed run is easy to eyeball.
 
 ```
 samples/all_rules/
-  pubspec.yaml                       # path-dependent on the root `anal` package
+  pubspec.yaml                       # path-dependent on the root `lintforge` package
   bin/
     main.dart                        # bin/ entry point — always reachable
     dev_tool.g.dart                  # excluded via `--exclude '*.g.dart'`; parsed
@@ -81,7 +81,7 @@ From the repository root:
 
 ```sh
 fvm dart pub get --directory samples/all_rules
-fvm dart run anal --exclude '*.g.dart' samples/all_rules
+fvm dart run lintforge --exclude '*.g.dart' samples/all_rules
 ```
 
 The runner analyses both `lib/` and `bin/` so that the `bin/main.dart`
@@ -186,7 +186,7 @@ declaration they introduce is exempt.
 | `N21`| `platformLabelFn` / `WebPlatformService` members in `lib/src/web_impl.dart` — the non-selected (`dart.library.html`) branch of the conditional export in `lib/all_rules_sample.dart` | A conditional export resolves to exactly one branch at analysis time (mobile on the VM), so members of the non-selected branch are reached only through the wrapper's export surface and look unreferenced. The rule collects every `if (...)` configuration branch URI across the analyzed set and skips every candidate declared in such a file. `web_impl.dart` sits under `lib/src/`, so the public-members-outside-`lib/src/` exemption does NOT apply; the conditional-export branch-target exemption is what keeps its members unflagged. |
 | `N22`| `LifecycleHost.toString` in `lib/src/framework_overrides.dart` | Overrides `Object.toString` — a supertype member declared in `dart:core`, outside the analyzed unit set — WITHOUT an `@override` annotation. A declaration that shadows a supertype member is an override whether or not it is annotated, and framework callbacks (Flutter's `State.createState`, lifecycle hooks) are routinely written without the annotation. When the inherited member is declared outside the analyzed set the rule cannot see its reference sites, so it conservatively treats the override as a use. The class is under `lib/src/`, isolating the override exemption as the sole reason the method survives. |
 | `N23`| every public member of `PublicSurface` and the public getter on `PublicChannel` (both declared in `lib/unused_function_demo.dart`, directly under `lib/`) | Public instance/static methods, getters, setters, and operators on a public class — and public members of a public enum — declared OUTSIDE a `lib/src/` directory form the package's consumable, test-exercised API surface. "No references found in the analyzed set" cannot prove such a member unused, so the rule skips a candidate when both the member name and its enclosing type name are public and the declaring file is not under `lib/src/`, mirroring the existing public-top-level exemption. Private members, and members of private types, remain flagged. |
-| `N24`| Every constructor of `FreezedSample` (`@freezed` bare-identifier form) in `lib/src/internals.dart` | `package:freezed`'s code generator emits boilerplate constructors — a private generative `Foo._()`, an unnamed factory forwarding to a generated `_$Foo`, and one named factory per union case — that are only invoked from generated `*.freezed.dart` part files. Consumers of `anal` typically run the rule before code generation has happened, so the source AST shows those constructors as unreferenced. The rule recognises `@freezed`, `@Freezed(...)`, `@unfreezed`, `@Unfreezed(...)`, and `@FreezedUnion(...)` annotations on the enclosing class and skips every constructor candidate. The sample declares a stub `freezed` identifier locally so it does not need to pull in `package:freezed_annotation` (and `build_runner`); the constructor-invocation form (`@Freezed()`) is covered by the rule's unit tests rather than here. |
+| `N24`| Every constructor of `FreezedSample` (`@freezed` bare-identifier form) in `lib/src/internals.dart` | `package:freezed`'s code generator emits boilerplate constructors — a private generative `Foo._()`, an unnamed factory forwarding to a generated `_$Foo`, and one named factory per union case — that are only invoked from generated `*.freezed.dart` part files. Consumers of `lintforge` typically run the rule before code generation has happened, so the source AST shows those constructors as unreferenced. The rule recognises `@freezed`, `@Freezed(...)`, `@unfreezed`, `@Unfreezed(...)`, and `@FreezedUnion(...)` annotations on the enclosing class and skips every constructor candidate. The sample declares a stub `freezed` identifier locally so it does not need to pull in `package:freezed_annotation` (and `build_runner`); the constructor-invocation form (`@Freezed()`) is covered by the rule's unit tests rather than here. |
 
 Each positive case has a used twin that exercises the negative path for the
 same kind:

@@ -2,7 +2,7 @@
 
 A small Dart package that exists solely to exercise the
 [`unused_source_file`](../../lib/src/rules/unused_source_file_rule.dart)
-multi-file rule shipped by the [`anal`](../../) package.
+multi-file rule shipped by the [`lintforge`](../../) package.
 
 ## Layout
 
@@ -39,7 +39,7 @@ samples/unused_source_file/
                            # unused_class in a reachable file, but are
                            # SUPPRESSED here because the whole file is already
                            # flagged
-  pubspec.yaml             # path-dependent on ../.. (the root anal package)
+  pubspec.yaml             # path-dependent on ../.. (the root lintforge package)
 ```
 
 | File                                       | Expected `unused_source_file`                                       |
@@ -73,7 +73,7 @@ From the repository root:
 
 ```sh
 fvm flutter pub get -C samples/unused_source_file
-fvm dart run anal --exclude '*.g.dart' samples/unused_source_file
+fvm dart run lintforge --exclude '*.g.dart' samples/unused_source_file
 ```
 
 The `--exclude '*.g.dart'` flag filters `bin/dev_tool.g.dart` out of the

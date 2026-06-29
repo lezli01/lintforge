@@ -1,13 +1,13 @@
-import 'package:anal/src/anal_options.dart';
+import 'package:lintforge/src/lintforge_options.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 void main() {
-  group('AnalOptions.defaultExcludePaths', () {
+  group('LintforgeOptions.defaultExcludePaths', () {
     test(
       'equals exactly [*.g.dart, *.freezed.dart, **/.dart_tool/**, **/build/**]',
       () {
         expect(
-          AnalOptions.defaultExcludePaths,
+          LintforgeOptions.defaultExcludePaths,
           equals(<String>[
             '*.g.dart',
             '*.freezed.dart',
@@ -19,9 +19,9 @@ void main() {
     );
   });
 
-  group('AnalOptions.defaults', () {
+  group('LintforgeOptions.defaults', () {
     test('excludePaths contains every default pattern', () {
-      const options = AnalOptions.defaults();
+      const options = LintforgeOptions.defaults();
       expect(options.excludePaths, contains('*.g.dart'));
       expect(options.excludePaths, contains('*.freezed.dart'));
       expect(options.excludePaths, contains('**/.dart_tool/**'));
@@ -29,14 +29,14 @@ void main() {
     });
 
     test('excludePaths is the defaultExcludePaths list', () {
-      const options = AnalOptions.defaults();
-      expect(options.excludePaths, equals(AnalOptions.defaultExcludePaths));
+      const options = LintforgeOptions.defaults();
+      expect(options.excludePaths, equals(LintforgeOptions.defaultExcludePaths));
     });
   });
 
-  group('AnalOptions constructor', () {
+  group('LintforgeOptions constructor', () {
     test('opt-out: explicit empty excludePaths yields an empty list', () {
-      const options = AnalOptions(
+      const options = LintforgeOptions(
         includePaths: ['lib/'],
         excludePaths: <String>[],
         enabledRuleIds: <String>{},
@@ -45,14 +45,14 @@ void main() {
     });
   });
 
-  group('AnalOptions equality and hashCode', () {
+  group('LintforgeOptions equality and hashCode', () {
     test('two instances with identical fields are == and share hashCode', () {
-      const a = AnalOptions(
+      const a = LintforgeOptions(
         includePaths: ['lib/', 'bin/'],
         excludePaths: ['*.g.dart'],
         enabledRuleIds: <String>{'rule_a', 'rule_b'},
       );
-      const b = AnalOptions(
+      const b = LintforgeOptions(
         includePaths: ['lib/', 'bin/'],
         excludePaths: ['*.g.dart'],
         enabledRuleIds: <String>{'rule_a', 'rule_b'},
@@ -62,12 +62,12 @@ void main() {
     });
 
     test('instances differing in excludePaths are not ==', () {
-      const a = AnalOptions(
+      const a = LintforgeOptions(
         includePaths: ['lib/'],
         excludePaths: ['*.g.dart'],
         enabledRuleIds: <String>{},
       );
-      const b = AnalOptions(
+      const b = LintforgeOptions(
         includePaths: ['lib/'],
         excludePaths: ['*.freezed.dart'],
         enabledRuleIds: <String>{},
@@ -76,12 +76,12 @@ void main() {
     });
 
     test('instances differing in includePaths are not ==', () {
-      const a = AnalOptions(
+      const a = LintforgeOptions(
         includePaths: ['lib/'],
         excludePaths: <String>[],
         enabledRuleIds: <String>{},
       );
-      const b = AnalOptions(
+      const b = LintforgeOptions(
         includePaths: ['bin/'],
         excludePaths: <String>[],
         enabledRuleIds: <String>{},
@@ -90,12 +90,12 @@ void main() {
     });
 
     test('instances differing in enabledRuleIds are not ==', () {
-      const a = AnalOptions(
+      const a = LintforgeOptions(
         includePaths: ['lib/'],
         excludePaths: <String>[],
         enabledRuleIds: <String>{'rule_a'},
       );
-      const b = AnalOptions(
+      const b = LintforgeOptions(
         includePaths: ['lib/'],
         excludePaths: <String>[],
         enabledRuleIds: <String>{'rule_b'},
@@ -104,12 +104,12 @@ void main() {
     });
 
     test('enabledRuleIds equality is order-independent', () {
-      const a = AnalOptions(
+      const a = LintforgeOptions(
         includePaths: ['lib/'],
         excludePaths: <String>[],
         enabledRuleIds: <String>{'rule_a', 'rule_b'},
       );
-      const b = AnalOptions(
+      const b = LintforgeOptions(
         includePaths: ['lib/'],
         excludePaths: <String>[],
         enabledRuleIds: <String>{'rule_b', 'rule_a'},

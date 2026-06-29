@@ -8,15 +8,15 @@ listed in section 5 use this categorisation as their work plan.
 
 ## 1. Run summary
 
-Commands (executed from the `anal` repo root):
+Commands (executed from the `lintforge` repo root):
 
 ```sh
-fvm dart run anal --rules unused_function /home/lezli/projects/momminess > /tmp/anal-momminess.txt 2>&1 || true
-fvm dart run anal /home/lezli/projects/momminess > /tmp/anal-momminess-default.txt 2>&1 || true
+fvm dart run lintforge --rules unused_function /home/lezli/projects/momminess > /tmp/lintforge-momminess.txt 2>&1 || true
+fvm dart run lintforge /home/lezli/projects/momminess > /tmp/lintforge-momminess-default.txt 2>&1 || true
 ```
 
-- `anal` version under test: `0.3.4` (from
-  [bin/anal.dart](../bin/anal.dart) `_version`).
+- `lintforge` version under test: `0.3.4` (from
+  [bin/lintforge.dart](../bin/lintforge.dart) `_version`).
 - `momminess` commit: `bae65a74e0f923aa30875d8891073b54df480a11`
   (HEAD at investigation time).
 - Total diagnostics emitted by the rule-only run: **4618**
@@ -620,4 +620,4 @@ sample-side test cases that must accompany the fix per
   complete in well under a minute; no perf gate was applied.
 - **Momminess-side cleanups.** Any genuinely dead code surfaced in
   section 4 is for the momminess maintainers to act on, not for
-  `anal`.
+  `lintforge`.
