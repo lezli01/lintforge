@@ -1,8 +1,12 @@
-# lintforge
+<p align="center">
+  <img src="https://raw.githubusercontent.com/lezli01/lintforge/master/.github/assets/lintforge-logo.png" alt="lintforge — pluggable static analysis for Dart &amp; Flutter" width="660">
+</p>
 
-[![CI](https://github.com/lezli01/lintforge/actions/workflows/ci.yml/badge.svg?branch=master)](https://github.com/lezli01/lintforge/actions/workflows/ci.yml)
-[![Release Please](https://github.com/lezli01/lintforge/actions/workflows/release-please.yml/badge.svg?branch=master)](https://github.com/lezli01/lintforge/actions/workflows/release-please.yml)
-[![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
+<p align="center">
+  <a href="https://github.com/lezli01/lintforge/actions/workflows/ci.yml"><img src="https://github.com/lezli01/lintforge/actions/workflows/ci.yml/badge.svg?branch=master" alt="CI"></a>
+  <a href="https://github.com/lezli01/lintforge/actions/workflows/release-please.yml"><img src="https://github.com/lezli01/lintforge/actions/workflows/release-please.yml/badge.svg?branch=master" alt="Release Please"></a>
+  <a href="LICENSE"><img src="https://img.shields.io/badge/license-MIT-blue.svg" alt="License: MIT"></a>
+</p>
 
 `lintforge` is a pluggable static analysis framework for Dart and Flutter projects.
 It provides the contracts, registry, runner, built-in rules, and CLI that
@@ -41,6 +45,10 @@ Run the analyzer against the current project:
 ```sh
 dart run lintforge [options] [paths...]
 ```
+
+<p align="center">
+  <img src="https://raw.githubusercontent.com/lezli01/lintforge/master/.github/assets/lintforge-cli.png" alt="Example lintforge CLI output reporting unused_function, unused_class, and unused_source_file findings with file locations" width="820">
+</p>
 
 When no paths are provided, `lintforge` inspects `lib/`, `bin/`, and `test/`.
 

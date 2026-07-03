@@ -34,3 +34,6 @@ migrate_working_dir/
 .fvm/
 prd.json
 .claude/settings.local.json
+
+# Scratch output from mascot/asset generation runs
+.codex-pet-runs/
