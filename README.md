@@ -1,27 +1,80 @@
 <p align="center">
-  <img src="https://raw.githubusercontent.com/lezli01/lintforge/master/.github/assets/lintforge-logo.png" alt="lintforge — pluggable static analysis for Dart &amp; Flutter" width="660">
+  <img src="https://raw.githubusercontent.com/lezli01/lintforge/master/.github/assets/lintforge-mark.png" alt="lintforge logo" width="96">
+</p>
+
+<h1 align="center">lintforge</h1>
+
+<p align="center">
+  <strong>Pluggable static analysis for Dart &amp; Flutter — write custom lint rules as plain Dart classes.</strong>
 </p>
 
 <p align="center">
-  <a href="https://github.com/lezli01/lintforge/actions/workflows/ci.yml"><img src="https://github.com/lezli01/lintforge/actions/workflows/ci.yml/badge.svg?branch=master" alt="CI"></a>
-  <a href="https://github.com/lezli01/lintforge/actions/workflows/release-please.yml"><img src="https://github.com/lezli01/lintforge/actions/workflows/release-please.yml/badge.svg?branch=master" alt="Release Please"></a>
-  <a href="LICENSE"><img src="https://img.shields.io/badge/license-MIT-blue.svg" alt="License: MIT"></a>
+  Rule contracts, a registry, a multi-file runner, built-in <code>unused_*</code> rules, and a CLI —<br>
+  so teams can enforce project-specific checks without writing a full analyzer plugin.
 </p>
 
-`lintforge` is a pluggable static analysis framework for Dart and Flutter projects.
-It provides the contracts, registry, runner, built-in rules, and CLI that
-custom analyzer rules plug into, so teams can implement project-specific checks
-as plain Dart classes without writing a full analyzer plugin.
+<p align="center">
+  <a href="https://github.com/lezli01/lintforge/actions/workflows/ci.yml"><img src="https://github.com/lezli01/lintforge/actions/workflows/ci.yml/badge.svg" alt="CI"></a>
+  <a href="https://github.com/lezli01/lintforge/releases"><img src="https://img.shields.io/github/v/release/lezli01/lintforge?sort=semver" alt="Latest release"></a>
+  <a href="LICENSE"><img src="https://img.shields.io/badge/License-MIT-yellow.svg" alt="License: MIT"></a>
+  <a href="https://www.buymeacoffee.com/lezli01"><img src="https://img.shields.io/badge/Buy_Me_a_Coffee-ffdd00?logo=buymeacoffee&logoColor=black" alt="Buy Me a Coffee"></a>
+</p>
 
-This release ships the framework plus the first built-in rule:
-`unused_function`. Additional built-in rules, including broader unused
-declaration detection and `const` suggestions, are planned for future releases.
+<p align="center">
+  <a href="#why-lintforge">Why</a> &bull;
+  <a href="#features">Features</a> &bull;
+  <a href="#cli-usage">CLI</a> &bull;
+  <a href="#built-in-rules">Rules</a> &bull;
+  <a href="#custom-rules">Custom Rules</a> &bull;
+  <a href="#contributing">Contributing</a>
+</p>
 
-## Status
+---
 
-`lintforge` is pre-1.0.0. Public APIs may change between minor versions while the
-framework matures. Pin a specific version in your `pubspec.yaml` if you need
-repeatable behavior.
+## Why lintforge?
+
+Adding a custom static check to a Dart or Flutter project usually means authoring
+a full analyzer plugin: a separate package, a plugin isolate, the analyzer plugin
+protocol, and a release cycle of its own. That is a lot of ceremony for "flag this
+one project-specific pattern."
+
+lintforge is the lighter alternative — a framework that supplies the contracts, a
+rule registry, a single-file and multi-file runner, and a CLI, so a custom rule is
+just a plain Dart class that inspects a fully resolved AST and yields diagnostics.
+It ships with a growing set of built-in `unused_*` rules, and because it is itself
+a static-analysis package it holds itself to the same bar: it lints cleanly,
+follows Effective Dart, and never ships a rule it does not pass.
+
+It is released under the [MIT License](LICENSE) and created by `lezli01` at
+[lezli01.is-a.dev](https://lezli01.is-a.dev). Contributions are welcome — see
+[Contributing](#contributing).
+
+## Features
+
+Point lintforge at a package and it treats writing and running custom analysis as
+first-class, plain-Dart work:
+
+- **Rules as plain Dart classes.** Implement `AnalyzerRule` for file-local checks
+  or `MultiFileAnalyzerRule` for cross-file ones, register it, and run — no
+  analyzer-plugin package, protocol, or isolate to stand up.
+- **Resolved AST, not text.** Rules run over fully resolved `package:analyzer`
+  compilation units, so they can follow types, inheritance, and references across
+  files instead of grepping source.
+- **Built-in unused-code rules.** Ships `unused_function`, `unused_class`, and
+  `unused_source_file` enabled by default, with a `--rules` flag to narrow the set.
+- **Language-feature aware.** The bundled rules account for extensions, extension
+  types, mixins, records, patterns, cascades, tear-offs, operator overloads,
+  super-parameter forwarding, `noSuchMethod`, `dart:mirrors`, conditional and
+  deferred imports, and `@pragma('vm:entry-point')`.
+- **A real CLI.** `dart run lintforge` analyzes `lib/`, `bin/`, and `test/` by
+  default, with `--rules`, `--exclude`, `--list-rules`, and sensible default
+  excludes for generated files and build caches.
+- **Reference-aware excludes.** Excluded files (such as `*.g.dart`) are still
+  parsed and resolved, so references from generated code keep hand-written
+  declarations alive — they just never receive diagnostics themselves.
+- **Containment-aware reporting.** The three unused rules form a file → type →
+  member hierarchy and suppress nested findings, so a dead artifact is reported
+  once at the coarsest level instead of accruing per-declaration noise.
 
 ## Installation
 
@@ -458,9 +511,47 @@ fvm flutter test --coverage
 fvm dart pub publish --dry-run
 ```
 
-See [CONTRIBUTING.md](CONTRIBUTING.md) for contribution workflow details and
-[SECURITY.md](SECURITY.md) for vulnerability reporting.
+## Project Status
+
+`lintforge` is pre-1.0.0. The framework — rule contracts, the registry, the
+single-file and multi-file runners, the CLI, and the built-in `unused_function`,
+`unused_class`, and `unused_source_file` rules — is working today and exercised by
+the sample projects under [`samples/`](samples/). Public APIs may still change
+between minor versions while the framework matures, so pin a specific version in
+your `pubspec.yaml` if you need repeatable behavior. Additional built-in rules,
+including broader unused-declaration detection and `const` suggestions, are
+planned.
+
+## Contributing
+
+Contributions of every size are welcome — bug reports, docs, new rules, test
+cases, and features. lintforge is itself a static-analysis package, so it holds
+its own sources to the rules it ships; keeping that bar is part of the work. Start
+here:
+
+- Read the [Contributing guide](CONTRIBUTING.md) for development setup (FVM), the
+  quality checks expected before a pull request, and the commit-message convention.
+- Be a good neighbor: this project follows a
+  [Code of Conduct](CODE_OF_CONDUCT.md).
+- Have a question or an idea? Open a
+  [Discussion](https://github.com/lezli01/lintforge/discussions).
+- Found a bug or want a rule? Open an
+  [issue](https://github.com/lezli01/lintforge/issues/new/choose).
+
+Releases are automated with
+[release-please](https://github.com/googleapis/release-please), so pull requests
+use [Conventional Commits](https://www.conventionalcommits.org/) titles. Details
+are in [CONTRIBUTING.md](CONTRIBUTING.md).
+
+## Security
+
+lintforge runs locally as a development dependency: it reads your source, resolves
+it with `package:analyzer`, and prints diagnostics. It performs no network access
+and never executes the code it analyzes, so its attack surface is small — but
+security reports are taken seriously. Please report suspected vulnerabilities
+privately via GitHub's private vulnerability reporting for this repository rather
+than a public issue. See [SECURITY.md](SECURITY.md) for details.
 
 ## License
 
-`lintforge` is available under the [MIT License](LICENSE).
+`lintforge` is released under the [MIT License](LICENSE). © 2026 lezli01.
