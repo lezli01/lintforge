@@ -812,8 +812,9 @@ class _GlobalReferenceCollector extends RecursiveAstVisitor<void> {
     // no AST node, so [visitConstructorDeclaration] never fires for it
     // — record the super-constructor target here so that
     // `class B extends A {}` counts as a use of `A.new`.
-    // ignore: deprecated_member_use
-    final members = node.members;
+    // analyzer 11 removed `ClassDeclaration.members`; read them from the
+    // declaration body (`ClassBody.members` on the sealed base in analyzer 13).
+    final members = node.body.members;
     final hasDeclaredConstructor = members.any(
       (member) => member is ConstructorDeclaration,
     );

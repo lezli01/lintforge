@@ -45,13 +45,10 @@ class _ExtensionMemberCollector implements _UnusedFunctionCandidateCollector {
       // exemption still applies to public members of an unnamed
       // extension declared outside `lib/src/`.
       final enclosingTypeName = extensionNameToken?.lexeme ?? '';
-      // `members` is deprecated in favor of `body` (analyzer 10.x), but
-      // `body` returns a `ClassBody` whose members getter is only
-      // available after a downcast to `BlockClassBody`. Sticking with
-      // the always-available `members` keeps the collector portable
-      // across the supported analyzer range.
-      // ignore: deprecated_member_use
-      for (final member in declaration.members) {
+      // analyzer 11 removed `ExtensionDeclaration.members`; the members now
+      // live on the declaration body. In analyzer 13 `ClassBody` exposes
+      // `members` on the sealed base, so no downcast is needed.
+      for (final member in declaration.body.members) {
         if (member is! MethodDeclaration) continue;
         final candidate = _candidateFor(
           member,

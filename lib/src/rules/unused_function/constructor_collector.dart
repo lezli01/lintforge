@@ -50,19 +50,13 @@ class _ConstructorCollector implements _UnusedFunctionCandidateCollector {
   ) sync* {
     for (final declaration in unit.unit.declarations) {
       if (declaration is ClassDeclaration) {
-        // `ClassDeclaration.namePart` requires the experimental
-        // `useDeclaringConstructorsAst` flag (default-off in analyzer
-        // 9.x/10.x) and throws `UnsupportedError` otherwise. The
-        // always-available `name` token is used instead.
-        // ignore: deprecated_member_use
-        final classNameToken = declaration.name;
-        // `members` is deprecated in favor of `body` (analyzer 10.x), but
-        // `body` returns a `ClassBody` whose members getter is only
-        // available after a downcast to `BlockClassBody`. Sticking with
-        // the always-available `members` keeps the collector portable
-        // across the supported analyzer range.
-        // ignore: deprecated_member_use
-        final members = declaration.members;
+        // analyzer 11 removed `ClassDeclaration.name`; the class-name token
+        // now lives on `namePart.typeName`.
+        final classNameToken = declaration.namePart.typeName;
+        // analyzer 11 removed `ClassDeclaration.members`; the members now live
+        // on the declaration body. In analyzer 13 `ClassBody` exposes
+        // `members` on the sealed base, so no downcast is needed.
+        final members = declaration.body.members;
         final enclosing = declaration.declaredFragment?.element;
         if (enclosing != null && _enclosingDeclaresNoSuchMethod(enclosing)) {
           continue;
@@ -74,15 +68,11 @@ class _ConstructorCollector implements _UnusedFunctionCandidateCollector {
           if (candidate != null) yield candidate;
         }
       } else if (declaration is EnumDeclaration) {
-        // See the `ClassDeclaration` branch above: `namePart` is gated on
-        // the same default-off experiment, so `name` is the portable
-        // accessor.
-        // ignore: deprecated_member_use
-        final enumNameToken = declaration.name;
-        // See the `ClassDeclaration` branch above for why `members` is
-        // preferred over the deprecation's suggested `body` accessor.
-        // ignore: deprecated_member_use
-        final members = declaration.members;
+        // See the `ClassDeclaration` branch above: analyzer 11 removed
+        // `EnumDeclaration.name` and `EnumDeclaration.members`; read them from
+        // `namePart.typeName` and the declaration body respectively.
+        final enumNameToken = declaration.namePart.typeName;
+        final members = declaration.body.members;
         final enclosing = declaration.declaredFragment?.element;
         if (enclosing != null && _enclosingDeclaresNoSuchMethod(enclosing)) {
           continue;
