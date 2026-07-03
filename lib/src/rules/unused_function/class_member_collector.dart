@@ -53,36 +53,31 @@ class _ClassMemberCollector implements _UnusedFunctionCandidateCollector {
     for (final declaration in unit.unit.declarations) {
       if (declaration is ClassDeclaration) {
         yield* _candidatesFor(
-          // `body` is the analyzer 10.x replacement but is gated on the
-          // default-off `useDeclaringConstructorsAst` experiment, so the
-          // always-available `members` accessor is used. Mirrors the
-          // pattern in `constructor_collector.dart`.
-          // ignore: deprecated_member_use
-          declaration.members,
+          // analyzer 11 removed `ClassDeclaration.members`; the members now
+          // live on the declaration body. In analyzer 13 `ClassBody` exposes
+          // `members` on the sealed base, so no downcast is needed.
+          declaration.body.members,
           declaration.declaredFragment?.element,
           context,
           filePath: unit.path,
         );
       } else if (declaration is MixinDeclaration) {
         yield* _candidatesFor(
-          // ignore: deprecated_member_use
-          declaration.members,
+          declaration.body.members,
           declaration.declaredFragment?.element,
           context,
           filePath: unit.path,
         );
       } else if (declaration is EnumDeclaration) {
         yield* _candidatesFor(
-          // ignore: deprecated_member_use
-          declaration.members,
+          declaration.body.members,
           declaration.declaredFragment?.element,
           context,
           filePath: unit.path,
         );
       } else if (declaration is ExtensionTypeDeclaration) {
         yield* _candidatesFor(
-          // ignore: deprecated_member_use
-          declaration.members,
+          declaration.body.members,
           declaration.declaredFragment?.element,
           context,
           filePath: unit.path,

@@ -123,12 +123,9 @@ class UnusedClassRule implements AnalyzerRule {
 
   _Candidate? _candidateFor(CompilationUnitMember declaration) {
     if (declaration is ClassDeclaration) {
-      // `ClassDeclaration.namePart` is only available with the experimental
-      // `useDeclaringConstructorsAst` flag enabled (default-off in analyzer
-      // 9.x/10.x); accessing it otherwise throws `UnsupportedError`. The
-      // always-available `name` token is used instead.
-      // ignore: deprecated_member_use
-      final nameToken = declaration.name;
+      // analyzer 11 removed `ClassDeclaration.name`; the class-name token now
+      // lives on `namePart.typeName` (`ClassNamePart.typeName`).
+      final nameToken = declaration.namePart.typeName;
       if (!_isPrivateName(nameToken.lexeme)) return null;
       if (_hasVmEntryPointPragma(declaration.metadata)) return null;
       return _Candidate(
@@ -147,11 +144,10 @@ class UnusedClassRule implements AnalyzerRule {
       );
     }
     if (declaration is EnumDeclaration) {
-      // See the `ClassDeclaration` branch above: `namePart` requires the
-      // default-off `useDeclaringConstructorsAst` experimental flag and
-      // throws `UnsupportedError` otherwise, so we use `name` instead.
-      // ignore: deprecated_member_use
-      final nameToken = declaration.name;
+      // See the `ClassDeclaration` branch above: analyzer 11 removed
+      // `EnumDeclaration.name`; read the enum-name token from
+      // `namePart.typeName`.
+      final nameToken = declaration.namePart.typeName;
       if (!_isPrivateName(nameToken.lexeme)) return null;
       if (_hasVmEntryPointPragma(declaration.metadata)) return null;
       return _Candidate(
@@ -161,12 +157,11 @@ class UnusedClassRule implements AnalyzerRule {
       );
     }
     if (declaration is ExtensionTypeDeclaration) {
-      // `ExtensionTypeDeclaration.name` is the only name accessor available in
-      // analyzer 9.0.0; `primaryConstructor` only exists in analyzer 10+ and
-      // `namePart` is not exposed on this node. Deprecation is suppressed
-      // because we still need to compile against the full supported range.
-      // ignore: deprecated_member_use
-      final nameToken = declaration.name;
+      // analyzer 11 removed `ExtensionTypeDeclaration.name` and this node
+      // exposes no `namePart`, so the type-name token is read from the
+      // primary constructor (`PrimaryConstructorDeclaration implements
+      // ClassNamePart`, so it carries `typeName`).
+      final nameToken = declaration.primaryConstructor.typeName;
       if (!_isPrivateName(nameToken.lexeme)) return null;
       if (_hasVmEntryPointPragma(declaration.metadata)) return null;
       return _Candidate(
