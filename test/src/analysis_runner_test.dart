@@ -153,7 +153,9 @@ void main() {
 
     setUp(() {
       savedCwd = Directory.current.path;
-      tempDir = Directory.systemTemp.createTempSync('lintforge_runner_exclude_');
+      tempDir = Directory.systemTemp.createTempSync(
+        'lintforge_runner_exclude_',
+      );
       Directory.current = tempDir.path;
     });
 
@@ -525,7 +527,9 @@ void main() {
     late Directory tempDir;
 
     setUp(() {
-      tempDir = Directory.systemTemp.createTempSync('lintforge_runner_nesting_');
+      tempDir = Directory.systemTemp.createTempSync(
+        'lintforge_runner_nesting_',
+      );
     });
 
     tearDown(() {

@@ -30,7 +30,10 @@ void main() {
 
     test('excludePaths is the defaultExcludePaths list', () {
       const options = LintforgeOptions.defaults();
-      expect(options.excludePaths, equals(LintforgeOptions.defaultExcludePaths));
+      expect(
+        options.excludePaths,
+        equals(LintforgeOptions.defaultExcludePaths),
+      );
     });
   });
 
