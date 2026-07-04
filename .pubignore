@@ -3,6 +3,7 @@
 build/
 coverage/
 samples/
+tool/
 
 AGENTS.md
 CLAUDE.md

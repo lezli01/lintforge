@@ -1,6 +1,6 @@
 # Code of Conduct
 
-`lintforge` aims to be a welcoming, practical project for people building better
+LintForge aims to be a welcoming, practical project for people building better
 Dart and Flutter tooling.
 
 ## Expected Behavior

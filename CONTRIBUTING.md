@@ -1,6 +1,6 @@
 # Contributing
 
-Thanks for taking the time to improve `lintforge`.
+Thanks for taking the time to improve LintForge.
 
 ## Development Setup
 
