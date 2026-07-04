@@ -116,6 +116,11 @@ Options:
   Custom excludes are added on top of the built-in defaults.
 - `--no-default-excludes`: disable the built-in default exclude patterns.
   Use `--exclude` to list any patterns you still want excluded.
+- `--color` / `--no-color`: force colored output on or off. When omitted,
+  color is auto-detected — enabled only for an interactive terminal, and
+  disabled when the output is piped or redirected, when `NO_COLOR` is set,
+  or when `TERM=dumb`. `FORCE_COLOR` forces it on. An explicit flag always
+  wins over the environment.
 
 By default, LintForge excludes generated files and tool/build caches that
 consumer projects almost never want to lint: `*.g.dart`, `*.freezed.dart`,
@@ -143,6 +148,35 @@ Exit codes:
 - `0`: no diagnostics with `Severity.error`.
 - `1`: at least one error diagnostic was emitted.
 - `64`: command-line usage error.
+
+### Output
+
+LintForge groups findings by file and lays them out in aligned
+`severity  line:col  rule  message` columns, with any correction hint on a
+continuation line beneath the message. The report ends with a one-line
+summary — for example `✖ 3 issues found  (1 error, 2 warnings)  in 2 files`,
+or `✓ No issues found` for a clean run.
+
+```text
+lib/unused_class_sample.dart
+  warning  13:7   unused_class  The class "_Foo" is declared but never used.
+                                ↳ Remove "_Foo" or reference it.
+  warning  16:7   unused_class  The mixin "_Bar" is declared but never used.
+                                ↳ Remove "_Bar" or reference it.
+
+⚠ 2 issues found  (2 warnings)  in 1 file
+```
+
+When writing to an interactive terminal the report is colorized (severities
+in color, secondary detail dimmed, file headers bold) and left as plain text
+when piped or redirected, so captured output stays clean and diffable. Color
+follows the `NO_COLOR` / `FORCE_COLOR` conventions and can be forced either
+way with `--color` / `--no-color`.
+
+While analysis runs, a live progress indicator (a spinner, a progress bar,
+and the file being resolved) is drawn to **stderr** whenever stderr is an
+interactive terminal, and erased before the results are printed — so it
+never pollutes the diagnostics written to stdout.
 
 ## Excluded Files as Reference Sources
 

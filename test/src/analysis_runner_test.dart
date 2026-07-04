@@ -2,6 +2,7 @@ import 'dart:io';
 
 import 'package:lintforge/src/lintforge_options.dart';
 import 'package:lintforge/src/analysis_context.dart';
+import 'package:lintforge/src/analysis_progress.dart';
 import 'package:lintforge/src/analysis_runner.dart';
 import 'package:lintforge/src/analyzer_rule.dart';
 import 'package:lintforge/src/diagnostic.dart';
@@ -664,6 +665,84 @@ class _DeadClass {}
           diagnostics.where((d) => d.ruleId == 'unused_source_file'),
           isEmpty,
         );
+      },
+    );
+  });
+
+  group('AnalysisRunner progress reporting', () {
+    late Directory tempDir;
+
+    setUp(() {
+      tempDir = Directory.systemTemp.createTempSync(
+        'lintforge_runner_progress_',
+      );
+    });
+
+    tearDown(() {
+      if (tempDir.existsSync()) {
+        tempDir.deleteSync(recursive: true);
+      }
+    });
+
+    void writeFile(String name) {
+      File(p.join(tempDir.path, name)).writeAsStringSync('void main() {}\n');
+    }
+
+    test(
+      'emits one resolving update per file with a rising completed count and '
+      'a single indeterminate cross-file update',
+      () async {
+        writeFile('a.dart');
+        writeFile('b.dart');
+        writeFile('c.dart');
+
+        final updates = <AnalysisProgress>[];
+        final runner = AnalysisRunner(
+          registry: RuleRegistry()
+            ..registerMultiFile(_CapturingMultiFileRule()),
+          options: LintforgeOptions(
+            includePaths: [tempDir.path],
+            excludePaths: const [],
+            enabledRuleIds: const <String>{},
+          ),
+          onProgress: updates.add,
+        );
+
+        await runner.run();
+
+        final resolving = updates
+            .where((u) => u.phase == AnalysisPhase.resolving)
+            .toList();
+        expect(resolving, hasLength(3));
+        expect(resolving.map((u) => u.completed).toList(), <int>[0, 1, 2]);
+        expect(resolving.every((u) => u.total == 3), isTrue);
+        expect(resolving.every((u) => u.currentPath != null), isTrue);
+
+        final crossFile = updates
+            .where((u) => u.phase == AnalysisPhase.crossFile)
+            .toList();
+        expect(crossFile, hasLength(1));
+        expect(crossFile.single.total, 0);
+      },
+    );
+
+    test(
+      'omitting the callback runs cleanly and yields identical diagnostics',
+      () async {
+        writeFile('a.dart');
+        final runner = AnalysisRunner(
+          registry: RuleRegistry()..register(_AlwaysFiresRule()),
+          options: LintforgeOptions(
+            includePaths: [tempDir.path],
+            excludePaths: const [],
+            enabledRuleIds: const <String>{},
+          ),
+        );
+
+        final diagnostics = await runner.run();
+
+        expect(diagnostics, hasLength(1));
+        expect(diagnostics.single.ruleId, 'always_fires');
       },
     );
   });

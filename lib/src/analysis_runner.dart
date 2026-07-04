@@ -8,6 +8,7 @@ import 'package:path/path.dart' as p;
 
 import 'lintforge_options.dart';
 import 'analysis_context.dart';
+import 'analysis_progress.dart';
 import 'analyzer_rule.dart';
 import 'diagnostic.dart';
 import 'diagnostic_suppression.dart';
@@ -36,8 +37,24 @@ class AnalysisRunner {
   /// enabled for this run.
   final LintforgeOptions options;
 
+  /// Optional callback invoked as the run advances, for rendering a live
+  /// progress indicator.
+  ///
+  /// When `null` (the default) the runner emits no progress and does no extra
+  /// work; the returned diagnostics are identical either way. The callback is
+  /// invoked synchronously on the run's isolate, once per file during
+  /// [AnalysisPhase.resolving] and once when the [AnalysisPhase.crossFile]
+  /// step begins.
+  final void Function(AnalysisProgress progress)? onProgress;
+
   /// Creates a runner bound to [registry] and [options].
-  AnalysisRunner({required this.registry, required this.options});
+  ///
+  /// Pass [onProgress] to receive live progress updates.
+  AnalysisRunner({
+    required this.registry,
+    required this.options,
+    this.onProgress,
+  });
 
   /// Resolves [LintforgeOptions.includePaths] to a concrete list of `.dart` files,
   /// partitions them into a reportable subset (everything not matched by
@@ -75,7 +92,19 @@ class AnalysisRunner {
     final diagnostics = <Diagnostic>[];
     final resolvedUnits = <ResolvedUnitResult>[];
 
+    final total = allPaths.length;
+    final report = onProgress;
+    var completed = 0;
     for (final file in allPaths) {
+      report?.call(
+        AnalysisProgress(
+          phase: AnalysisPhase.resolving,
+          completed: completed,
+          total: total,
+          currentPath: file,
+        ),
+      );
+      completed++;
       final isReportable = reportableSet.contains(file);
       try {
         final context = collection.contextFor(file);
@@ -110,6 +139,13 @@ class AnalysisRunner {
     }
 
     if (multiFileRules.isNotEmpty) {
+      report?.call(
+        AnalysisProgress(
+          phase: AnalysisPhase.crossFile,
+          completed: 0,
+          total: 0,
+        ),
+      );
       final analyzedFilePaths = <String>{
         for (final unit in resolvedUnits) unit.path,
       };

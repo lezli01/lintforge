@@ -9,6 +9,7 @@ library;
 
 export 'src/lintforge_options.dart';
 export 'src/analysis_context.dart';
+export 'src/analysis_progress.dart';
 export 'src/analysis_runner.dart';
 export 'src/analyzer_rule.dart';
 export 'src/diagnostic.dart';
@@ -21,3 +22,6 @@ export 'src/rules/unused_class_rule.dart';
 export 'src/rules/unused_source_file_rule.dart';
 export 'src/severity.dart';
 export 'src/source_location.dart';
+export 'src/terminal/ansi.dart';
+export 'src/terminal/color_support.dart';
+export 'src/terminal/progress_reporter.dart';
