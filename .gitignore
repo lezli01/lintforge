@@ -37,3 +37,6 @@ prd.json
 
 # Scratch output from mascot/asset generation runs
 .codex-pet-runs/
+
+# Node deps for the brand-asset generator (tool/)
+tool/node_modules/

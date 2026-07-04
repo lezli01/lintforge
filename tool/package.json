@@ -1,0 +1,13 @@
+{
+  "name": "lintforge-brand-tools",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Renders the lintforge brand PNGs from the committed SVG sources in .github/assets.",
+  "scripts": {
+    "render": "node render_assets.mjs"
+  },
+  "dependencies": {
+    "@resvg/resvg-js": "^2.6.2"
+  }
+}
