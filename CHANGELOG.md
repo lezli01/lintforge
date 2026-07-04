@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.3.9](https://github.com/lezli01/lintforge/compare/v0.3.8...v0.3.9) (2026-07-04)
+
+
+### Features
+
+* **cli:** colorize output, align findings, and show live progress ([7b6ee95](https://github.com/lezli01/lintforge/commit/7b6ee95564c4ad2077da8fff1bfff0de5e91155c))
+* **cli:** colorize output, align findings, and show live progress ([#46](https://github.com/lezli01/lintforge/issues/46)) ([b51c75d](https://github.com/lezli01/lintforge/commit/b51c75ddbb7ddbccbe2560e8de551d1535c88e62))
+
 ## [0.3.8](https://github.com/lezli01/lintforge/compare/v0.3.7...v0.3.8) (2026-05-29)
 
 
