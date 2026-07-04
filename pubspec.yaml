@@ -1,5 +1,5 @@
 name: lintforge
-description: A pluggable static analysis framework for Dart and Flutter projects with an extensible runner, rule registry, and CLI.
+description: LintForge is a pluggable static analysis framework for Dart and Flutter projects with an extensible runner, rule registry, and CLI.
 version: 0.3.8
 homepage: https://github.com/lezli01/lintforge
 repository: https://github.com/lezli01/lintforge

@@ -1,8 +1,8 @@
 <p align="center">
-  <img src="https://raw.githubusercontent.com/lezli01/lintforge/master/.github/assets/lintforge-mark.png" alt="lintforge logo" width="96">
+  <img src="https://raw.githubusercontent.com/lezli01/lintforge/master/.github/assets/lintforge-mark.png" alt="LintForge logo" width="96">
 </p>
 
-<h1 align="center">lintforge</h1>
+<h1 align="center">LintForge</h1>
 
 <p align="center">
   <strong>Pluggable static analysis for Dart &amp; Flutter — write custom lint rules as plain Dart classes.</strong>
@@ -31,14 +31,14 @@
 
 ---
 
-## Why lintforge?
+## Why LintForge?
 
 Adding a custom static check to a Dart or Flutter project usually means authoring
 a full analyzer plugin: a separate package, a plugin isolate, the analyzer plugin
 protocol, and a release cycle of its own. That is a lot of ceremony for "flag this
 one project-specific pattern."
 
-lintforge is the lighter alternative — a framework that supplies the contracts, a
+LintForge is the lighter alternative — a framework that supplies the contracts, a
 rule registry, a single-file and multi-file runner, and a CLI, so a custom rule is
 just a plain Dart class that inspects a fully resolved AST and yields diagnostics.
 It ships with a growing set of built-in `unused_*` rules, and because it is itself
@@ -51,7 +51,7 @@ It is released under the [MIT License](LICENSE) and created by `lezli01` at
 
 ## Features
 
-Point lintforge at a package and it treats writing and running custom analysis as
+Point LintForge at a package and it treats writing and running custom analysis as
 first-class, plain-Dart work:
 
 - **Rules as plain Dart classes.** Implement `AnalyzerRule` for file-local checks
@@ -100,10 +100,10 @@ dart run lintforge [options] [paths...]
 ```
 
 <p align="center">
-  <img src="https://raw.githubusercontent.com/lezli01/lintforge/master/.github/assets/lintforge-cli.png" alt="Example lintforge CLI output reporting unused_function, unused_class, and unused_source_file findings with file locations" width="820">
+  <img src="https://raw.githubusercontent.com/lezli01/lintforge/master/.github/assets/lintforge-cli.png" alt="Example LintForge CLI output reporting unused_function, unused_class, and unused_source_file findings with file locations" width="820">
 </p>
 
-When no paths are provided, `lintforge` inspects `lib/`, `bin/`, and `test/`.
+When no paths are provided, LintForge inspects `lib/`, `bin/`, and `test/`.
 
 Options:
 
@@ -117,10 +117,10 @@ Options:
 - `--no-default-excludes`: disable the built-in default exclude patterns.
   Use `--exclude` to list any patterns you still want excluded.
 
-By default, `lintforge` excludes generated files and tool/build caches that
+By default, LintForge excludes generated files and tool/build caches that
 consumer projects almost never want to lint: `*.g.dart`, `*.freezed.dart`,
 `**/.dart_tool/**`, and `**/build/**`. The two directory patterns mirror
-the canonical Dart/Flutter ignore set, so running `lintforge` against a project
+the canonical Dart/Flutter ignore set, so running LintForge against a project
 root will not flag Flutter-generated registrants under `.dart_tool/` or
 build artefacts under `build/`. Exclude patterns are matched against the
 file's basename, its path relative to the current working directory, and
@@ -131,7 +131,7 @@ entirely:
 dart run lintforge --no-default-excludes
 ```
 
-List the rules shipped with `lintforge` — each entry shows the rule id,
+List the rules shipped with LintForge — each entry shows the rule id,
 severity, and a one-line description, one rule per line:
 
 ```sh
@@ -193,7 +193,7 @@ Per built-in rule:
 
 ## Built-In Rules
 
-`lintforge` ships with the following rules enabled by default. To turn one off, pass
+LintForge ships with the following rules enabled by default. To turn one off, pass
 `--rules` with a list that omits it.
 
 ### `unused_function`
@@ -513,7 +513,7 @@ fvm dart pub publish --dry-run
 
 ## Project Status
 
-`lintforge` is pre-1.0.0. The framework — rule contracts, the registry, the
+LintForge is pre-1.0.0. The framework — rule contracts, the registry, the
 single-file and multi-file runners, the CLI, and the built-in `unused_function`,
 `unused_class`, and `unused_source_file` rules — is working today and exercised by
 the sample projects under [`samples/`](samples/). Public APIs may still change
@@ -525,7 +525,7 @@ planned.
 ## Contributing
 
 Contributions of every size are welcome — bug reports, docs, new rules, test
-cases, and features. lintforge is itself a static-analysis package, so it holds
+cases, and features. LintForge is itself a static-analysis package, so it holds
 its own sources to the rules it ships; keeping that bar is part of the work. Start
 here:
 
@@ -545,7 +545,7 @@ are in [CONTRIBUTING.md](CONTRIBUTING.md).
 
 ## Security
 
-lintforge runs locally as a development dependency: it reads your source, resolves
+LintForge runs locally as a development dependency: it reads your source, resolves
 it with `package:analyzer`, and prints diagnostics. It performs no network access
 and never executes the code it analyzes, so its attack surface is small — but
 security reports are taken seriously. Please report suspected vulnerabilities
@@ -554,4 +554,4 @@ than a public issue. See [SECURITY.md](SECURITY.md) for details.
 
 ## License
 
-`lintforge` is released under the [MIT License](LICENSE). © 2026 lezli01.
+LintForge is released under the [MIT License](LICENSE). © 2026 lezli01.

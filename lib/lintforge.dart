@@ -1,4 +1,4 @@
-/// `lintforge` is a pluggable static analysis framework for Dart and Flutter
+/// LintForge is a pluggable static analysis framework for Dart and Flutter
 /// projects.
 ///
 /// This library re-exports the package's public surface: the [AnalyzerRule]

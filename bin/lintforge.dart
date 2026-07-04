@@ -139,7 +139,7 @@ LintforgeOptions _buildOptions(ArgResults parsed) {
 String _usage(ArgParser parser) {
   return 'Usage: dart run lintforge [options] [paths...]\n'
       '\n'
-      'Static analysis frame for Dart and Flutter projects.\n'
+      'LintForge — static analysis for Dart and Flutter projects.\n'
       '\n'
       'Options:\n'
       '${parser.usage}';

@@ -2,7 +2,7 @@
 
 ## Supported Versions
 
-`lintforge` is pre-1.0.0. Security fixes are provided for the latest published
+LintForge is pre-1.0.0. Security fixes are provided for the latest published
 version only.
 
 | Version | Supported |

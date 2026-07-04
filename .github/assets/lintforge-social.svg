@@ -1,4 +1,4 @@
-<svg xmlns="http://www.w3.org/2000/svg" width="1280" height="640" viewBox="0 0 1280 640" role="img" aria-label="lintforge — Pluggable static analysis for Dart &amp; Flutter">
+<svg xmlns="http://www.w3.org/2000/svg" width="1280" height="640" viewBox="0 0 1280 640" role="img" aria-label="LintForge — Pluggable static analysis for Dart &amp; Flutter">
   <defs>
     <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
       <stop offset="0" stop-color="#111C30"/><stop offset="1" stop-color="#0B1120"/>
@@ -23,7 +23,7 @@
 
   <!-- wordmark: lint (white) + forge (amber), centered -->
   <text x="640" y="500" text-anchor="middle" font-family="Segoe UI, Arial, sans-serif" font-size="120" font-weight="700" letter-spacing="-1">
-    <tspan fill="#E2E8F0">lint</tspan><tspan fill="#FBBF24">forge</tspan>
+    <tspan fill="#E2E8F0">Lint</tspan><tspan fill="#FBBF24">Forge</tspan>
   </text>
   <!-- tagline, centered -->
   <text x="640" y="560" text-anchor="middle" font-family="Segoe UI, Arial, sans-serif" font-size="34" font-weight="400" fill="#94A3B8">Pluggable static analysis for Dart &amp; Flutter</text>
