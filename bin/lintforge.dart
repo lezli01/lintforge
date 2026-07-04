@@ -1,5 +1,6 @@
 import 'dart:io';
 
+import 'package:lintforge/src/analysis_progress.dart';
 import 'package:lintforge/src/lintforge_options.dart';
 import 'package:lintforge/src/analysis_runner.dart';
 import 'package:lintforge/src/reporter.dart';
@@ -8,7 +9,11 @@ import 'package:lintforge/src/rules/unused_class_rule.dart';
 import 'package:lintforge/src/rules/unused_function_rule.dart';
 import 'package:lintforge/src/rules/unused_source_file_rule.dart';
 import 'package:lintforge/src/severity.dart';
+import 'package:lintforge/src/terminal/ansi.dart';
+import 'package:lintforge/src/terminal/color_support.dart';
+import 'package:lintforge/src/terminal/progress_reporter.dart';
 import 'package:args/args.dart';
+import 'package:path/path.dart' as p;
 
 const String _version = '0.3.8'; // x-release-please-version
 
@@ -19,15 +24,21 @@ Future<void> main(List<String> arguments) async {
   try {
     parsed = parser.parse(arguments);
   } on FormatException catch (error) {
-    stderr.writeln(error.message);
+    // Parsing failed before we could read an explicit --color preference, so
+    // fall back to auto-detection for the error/usage output.
+    final ansi = _resolveFor(ColorPreference.auto, stderr);
+    stderr.writeln(ansi.paint(error.message, const <int>[Ansi.red]));
     stderr.writeln();
-    stderr.writeln(_usage(parser));
+    stderr.writeln(_usage(parser, ansi));
     exitCode = 64;
     return;
   }
 
+  final preference = _preference(parsed.wasParsed('color') ? parsed : null);
+  final stdoutAnsi = _resolveFor(preference, stdout);
+
   if (parsed['help'] as bool) {
-    stdout.writeln(_usage(parser));
+    stdout.writeln(_usage(parser, stdoutAnsi));
     return;
   }
 
@@ -37,21 +48,89 @@ Future<void> main(List<String> arguments) async {
   }
 
   if (parsed['list-rules'] as bool) {
-    _printRuleListing(_buildRegistry(), stdout);
+    _printRuleListing(_buildRegistry(), stdout, stdoutAnsi);
     return;
   }
 
   final options = _buildOptions(parsed);
-
   final registry = _buildRegistry();
 
-  final runner = AnalysisRunner(registry: registry, options: options);
-  final diagnostics = await runner.run();
+  final cwd = Directory.current.path;
+  final stderrAnsi = _resolveFor(preference, stderr);
+  final progress = ProgressReporter(
+    out: stderr,
+    enabled: stderr.hasTerminal && stderr.supportsAnsiEscapes,
+    ansi: stderrAnsi,
+    width: _terminalWidth(),
+  );
 
-  ConsoleReporter(out: stdout).report(diagnostics);
+  // Immediate feedback: the analyzer's context-collection setup runs before
+  // the first per-file callback, so show an indeterminate tick right away.
+  progress.report(phase: 'Analyzing', completed: 0, total: 0);
+
+  final runner = AnalysisRunner(
+    registry: registry,
+    options: options,
+    onProgress: (update) {
+      final phaseLabel = switch (update.phase) {
+        AnalysisPhase.resolving => 'Analyzing',
+        AnalysisPhase.crossFile => 'Cross-file analysis',
+      };
+      final path = update.currentPath;
+      progress.report(
+        phase: phaseLabel,
+        completed: update.completed,
+        total: update.total,
+        detail: path == null ? null : _relative(path, cwd),
+      );
+    },
+  );
+
+  final diagnostics = await runner.run();
+  progress.clear();
+
+  ConsoleReporter(
+    out: stdout,
+    ansi: stdoutAnsi,
+    relativeTo: cwd,
+  ).report(diagnostics);
 
   if (diagnostics.any((d) => d.severity == Severity.error)) {
     exitCode = 1;
+  }
+}
+
+ColorPreference _preference(ArgResults? parsed) {
+  if (parsed == null) return ColorPreference.auto;
+  return (parsed['color'] as bool)
+      ? ColorPreference.always
+      : ColorPreference.never;
+}
+
+Ansi _resolveFor(ColorPreference preference, Stdout stream) {
+  return resolveAnsi(
+    preference: preference,
+    hasTerminal: stream.hasTerminal,
+    supportsAnsiEscapes: stream.supportsAnsiEscapes,
+    environment: Platform.environment,
+  );
+}
+
+int _terminalWidth() {
+  try {
+    if (stderr.hasTerminal) return stderr.terminalColumns;
+    if (stdout.hasTerminal) return stdout.terminalColumns;
+  } on Object {
+    // Fall through to the default when the platform refuses a width.
+  }
+  return 80;
+}
+
+String _relative(String path, String from) {
+  try {
+    return p.relative(path, from: from);
+  } on Object {
+    return path;
   }
 }
 
@@ -74,6 +153,14 @@ ArgParser _buildArgParser() {
       help:
           'List the registered rules with their severity and description, '
           'then exit.',
+    )
+    ..addFlag(
+      'color',
+      negatable: true,
+      help:
+          'Force colored output on (--color) or off (--no-color). '
+          'When omitted, color is auto-detected from the terminal and the '
+          'NO_COLOR / FORCE_COLOR environment variables.',
     )
     ..addOption(
       'rules',
@@ -136,12 +223,13 @@ LintforgeOptions _buildOptions(ArgResults parsed) {
   );
 }
 
-String _usage(ArgParser parser) {
+String _usage(ArgParser parser, Ansi ansi) {
+  final title = ansi.paint('LintForge', const <int>[Ansi.bold, Ansi.cyan]);
   return 'Usage: dart run lintforge [options] [paths...]\n'
       '\n'
-      'LintForge — static analysis for Dart and Flutter projects.\n'
+      '$title — static analysis for Dart and Flutter projects.\n'
       '\n'
-      'Options:\n'
+      '${ansi.paint('Options:', const <int>[Ansi.bold])}\n'
       '${parser.usage}';
 }
 
@@ -153,7 +241,7 @@ RuleRegistry _buildRegistry() {
   return registry;
 }
 
-void _printRuleListing(RuleRegistry registry, StringSink out) {
+void _printRuleListing(RuleRegistry registry, StringSink out, Ansi ansi) {
   final entries = <({String id, Severity severity, String description})>[
     for (final rule in registry.rules)
       (
@@ -176,12 +264,20 @@ void _printRuleListing(RuleRegistry registry, StringSink out) {
     }
   }
 
-  out.write('Available rules:\n\n');
+  out.write('${ansi.paint('Available rules:', const <int>[Ansi.bold])}\n\n');
   for (final entry in entries) {
     out.write(
-      '  ${entry.id.padRight(idWidth + 2)}'
-      '${entry.severity.name.padRight(9)}'
-      '${entry.description}\n',
+      '  '
+      '${ansi.paint(entry.id.padRight(idWidth + 2), const <int>[Ansi.cyan])}'
+      '${ansi.paint(entry.severity.name.padRight(9), _severityStyle(entry.severity))}'
+      '${ansi.paint(entry.description, const <int>[Ansi.dim])}'
+      '\n',
     );
   }
 }
+
+List<int> _severityStyle(Severity severity) => switch (severity) {
+  Severity.error => const <int>[Ansi.bold, Ansi.red],
+  Severity.warning => const <int>[Ansi.bold, Ansi.yellow],
+  Severity.info => const <int>[Ansi.bold, Ansi.cyan],
+};
