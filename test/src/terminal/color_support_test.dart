@@ -1,5 +1,5 @@
 import 'package:lintforge/src/terminal/color_support.dart';
-import 'package:flutter_test/flutter_test.dart';
+import 'package:test/test.dart';
 
 bool _decide(
   ColorPreference preference, {

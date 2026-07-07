@@ -4,7 +4,7 @@ import 'package:lintforge/src/multi_file_analyzer_rule.dart';
 import 'package:lintforge/src/severity.dart';
 import 'package:lintforge/src/source_location.dart';
 import 'package:analyzer/dart/analysis/results.dart';
-import 'package:flutter_test/flutter_test.dart';
+import 'package:test/test.dart';
 
 class _StubMultiFileRule implements MultiFileAnalyzerRule {
   _StubMultiFileRule({

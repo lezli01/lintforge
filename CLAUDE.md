@@ -30,10 +30,10 @@ This project uses **[FVM](https://fvm.app/) (Flutter Version Management)** to pi
 Always prefix with `fvm`:
 
 ```sh
-fvm flutter pub get          # install dependencies
+fvm dart pub get             # install dependencies
 fvm dart analyze             # run the analyzer (must be clean)
 fvm dart format .            # format code (must be a no-op in CI)
-fvm flutter test             # run the test suite
+fvm dart test                # run the test suite
 fvm dart pub publish --dry-run   # validate before publishing
 ```
 
@@ -75,8 +75,8 @@ README.md     User-facing documentation.
 - Cover both positive and negative paths: invalid input, thrown exceptions, async failures, and cancellation where applicable.
 - Mirror the structure of `lib/` inside `test/` (e.g. `lib/src/foo.dart` → `test/src/foo_test.dart`) and group related cases with `group(...)`.
 - Keep tests deterministic and hermetic — no network, no real filesystem outside `Directory.systemTemp`, no reliance on wall-clock time. Use fakes/mocks for I/O.
-- Run the full suite with `fvm flutter test` before committing. A PR with failing or missing tests should not be merged.
-- When practical, also run `fvm flutter test --coverage` and inspect `coverage/lcov.info` to confirm new code is exercised; do not lower overall coverage.
+- Run the full suite with `fvm dart test` before committing. A PR with failing or missing tests should not be merged.
+- When practical, also run `fvm dart test --coverage=coverage` and convert it to `coverage/lcov.info` to confirm new code is exercised; do not lower overall coverage.
 
 ## Sample Projects
 
@@ -335,7 +335,7 @@ This runs `lintforge` directly on every sample under `samples/` and compares fin
 
 - [ ] `fvm dart format .` — clean
 - [ ] `fvm dart analyze` — zero issues
-- [ ] `fvm flutter test` — all green
+- [ ] `fvm dart test` — all green
 - [ ] `/lintforge-probe` — all samples pass
 - [ ] CHANGELOG updated (if user-visible)
 - [ ] README updated (if behavior, API, or bundled rules changed)

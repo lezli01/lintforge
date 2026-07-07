@@ -4,7 +4,7 @@ import 'dart:io';
 
 import 'package:lintforge/src/terminal/ansi.dart';
 import 'package:lintforge/src/terminal/progress_reporter.dart';
-import 'package:flutter_test/flutter_test.dart';
+import 'package:test/test.dart';
 
 class _MemoryConsumer implements StreamConsumer<List<int>> {
   final List<int> bytes = <int>[];

@@ -225,7 +225,7 @@ LintforgeOptions _buildOptions(ArgResults parsed) {
 
 String _usage(ArgParser parser, Ansi ansi) {
   final title = ansi.paint('LintForge', const <int>[Ansi.bold, Ansi.cyan]);
-  return 'Usage: dart run lintforge [options] [paths...]\n'
+  return 'Usage: lintforge [options] [paths...]\n'
       '\n'
       '$title — static analysis for Dart and Flutter projects.\n'
       '\n'

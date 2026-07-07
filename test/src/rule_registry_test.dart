@@ -5,7 +5,7 @@ import 'package:lintforge/src/multi_file_analysis_context.dart';
 import 'package:lintforge/src/multi_file_analyzer_rule.dart';
 import 'package:lintforge/src/rule_registry.dart';
 import 'package:lintforge/src/severity.dart';
-import 'package:flutter_test/flutter_test.dart';
+import 'package:test/test.dart';
 
 class _StubRule implements AnalyzerRule {
   _StubRule(this.id);
