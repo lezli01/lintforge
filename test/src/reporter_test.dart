@@ -7,7 +7,7 @@ import 'package:lintforge/src/reporter.dart';
 import 'package:lintforge/src/severity.dart';
 import 'package:lintforge/src/source_location.dart';
 import 'package:lintforge/src/terminal/ansi.dart';
-import 'package:flutter_test/flutter_test.dart';
+import 'package:test/test.dart';
 import 'package:path/path.dart' as p;
 
 /// Runs [body] against an in-memory [IOSink] and returns the decoded text.

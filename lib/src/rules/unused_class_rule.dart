@@ -157,11 +157,9 @@ class UnusedClassRule implements AnalyzerRule {
       );
     }
     if (declaration is ExtensionTypeDeclaration) {
-      // analyzer 11 removed `ExtensionTypeDeclaration.name` and this node
-      // exposes no `namePart`, so the type-name token is read from the
-      // primary constructor (`PrimaryConstructorDeclaration implements
-      // ClassNamePart`, so it carries `typeName`).
-      final nameToken = declaration.primaryConstructor.typeName;
+      // The type-name token is read from `namePart` (a `ClassNamePart`, so it
+      // carries `typeName`); `primaryConstructor` is deprecated for this.
+      final nameToken = declaration.namePart.typeName;
       if (!_isPrivateName(nameToken.lexeme)) return null;
       if (_hasVmEntryPointPragma(declaration.metadata)) return null;
       return _Candidate(

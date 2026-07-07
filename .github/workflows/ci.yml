@@ -35,7 +35,7 @@ jobs:
           dart --version
 
       - name: Install dependencies
-        run: flutter pub get
+        run: dart pub get
 
       - name: Verify formatting
         run: dart format --output=none --set-exit-if-changed .
@@ -43,8 +43,13 @@ jobs:
       - name: Analyze
         run: dart analyze --fatal-infos --fatal-warnings
 
-      - name: Run tests
-        run: flutter test --coverage
+      - name: Run tests with coverage
+        run: |
+          dart pub global activate coverage
+          dart test --coverage=coverage
+          dart pub global run coverage:format_coverage \
+            --lcov --in=coverage --out=coverage/lcov.info \
+            --report-on=lib --packages=.dart_tool/package_config.json
 
       - name: Upload coverage
         if: always()

@@ -2,7 +2,7 @@ import 'package:lintforge/src/diagnostic.dart';
 import 'package:lintforge/src/diagnostic_suppression.dart';
 import 'package:lintforge/src/severity.dart';
 import 'package:lintforge/src/source_location.dart';
-import 'package:flutter_test/flutter_test.dart';
+import 'package:test/test.dart';
 
 /// Builds a [Diagnostic] with just the fields the suppressor inspects
 /// ([Diagnostic.ruleId] and [SourceLocation.filePath]); everything else is

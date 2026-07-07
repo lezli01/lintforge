@@ -238,10 +238,16 @@ class AnalysisRunner {
 
   bool _isExcluded(String file, List<_ExcludeGlob> globs) {
     if (globs.isEmpty) return false;
+    final posixAbsolute = _toPosix(file);
     final candidates = <String>[
       _toPosix(p.basename(file)),
       _toPosix(p.relative(file, from: Directory.current.path)),
-      _toPosix(file),
+      posixAbsolute,
+      // `glob` (>=2.1.3) will not match a `**/…/**` pattern against a path
+      // with a leading `/`, so also offer the absolute path with its leading
+      // separator stripped. This keeps the documented "matched against its
+      // absolute path" behavior working for recursive segment patterns.
+      if (posixAbsolute.startsWith('/')) posixAbsolute.substring(1),
     ];
     for (final exclude in globs) {
       for (final candidate in candidates) {

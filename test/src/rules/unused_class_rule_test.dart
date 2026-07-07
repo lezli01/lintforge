@@ -6,7 +6,7 @@ import 'package:lintforge/src/rules/unused_class_rule.dart';
 import 'package:lintforge/src/severity.dart';
 import 'package:analyzer/dart/analysis/analysis_context_collection.dart';
 import 'package:analyzer/dart/analysis/results.dart';
-import 'package:flutter_test/flutter_test.dart';
+import 'package:test/test.dart';
 import 'package:path/path.dart' as p;
 
 void main() {

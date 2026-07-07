@@ -66,8 +66,10 @@ first-class, plain-Dart work:
   types, mixins, records, patterns, cascades, tear-offs, operator overloads,
   super-parameter forwarding, `noSuchMethod`, `dart:mirrors`, conditional and
   deferred imports, and `@pragma('vm:entry-point')`.
-- **A real CLI.** `dart run lintforge` analyzes `lib/`, `bin/`, and `test/` by
-  default, with `--rules`, `--exclude`, `--list-rules`, and sensible default
+- **A standalone CLI.** Installed once with `dart pub global activate`, the
+  `lintforge` command analyzes `lib/`, `bin/`, and `test/` of any project by
+  default — no `dev_dependency`, no `pubspec.yaml` changes in the projects you
+  lint — with `--rules`, `--exclude`, `--list-rules`, and sensible default
   excludes for generated files and build caches.
 - **Reference-aware excludes.** Excluded files (such as `*.g.dart`) are still
   parsed and resolved, so references from generated code keep hand-written
@@ -78,25 +80,33 @@ first-class, plain-Dart work:
 
 ## Installation
 
-Add `lintforge` as a development dependency:
+LintForge is a **standalone command-line tool**. Install it once and run it
+against any Dart or Flutter project — you do **not** add it to that project's
+`pubspec.yaml`:
 
 ```sh
-flutter pub add --dev lintforge
+dart pub global activate lintforge
 ```
 
-Or edit `pubspec.yaml` directly:
+This installs a `lintforge` executable into `~/.pub-cache/bin`. Make sure that
+directory is on your `PATH` (see the
+[pub global path setup](https://dart.dev/tools/pub/cmd/pub-global#running-a-script-from-your-path)).
+Re-run the same command to update; append a version to pin one:
 
-```yaml
-dev_dependencies:
-  lintforge: <version>
+```sh
+dart pub global activate lintforge <version>
 ```
+
+> **Writing custom rules?** LintForge can also be consumed as a library so you
+> can register your own `AnalyzerRule` / `MultiFileAnalyzerRule` classes and run
+> them from a small entrypoint of your own — see [Custom Rules](#custom-rules).
 
 ## CLI Usage
 
 Run the analyzer against the current project:
 
 ```sh
-dart run lintforge [options] [paths...]
+lintforge [options] [paths...]
 ```
 
 <p align="center">
@@ -133,14 +143,14 @@ its absolute path; any match excludes the file. To opt out of the defaults
 entirely:
 
 ```sh
-dart run lintforge --no-default-excludes
+lintforge --no-default-excludes
 ```
 
 List the rules shipped with LintForge — each entry shows the rule id,
 severity, and a one-line description, one rule per line:
 
 ```sh
-dart run lintforge --list-rules
+lintforge --list-rules
 ```
 
 Exit codes:
@@ -457,8 +467,11 @@ stays in effect whether or not `unused_class` is enabled.
 
 ## Custom Rules
 
-Implement `AnalyzerRule`, register it with a `RuleRegistry`, and pass the
-registry to `AnalysisRunner`:
+The standalone `lintforge` CLI runs the built-in rules. To run rules of your
+own, consume LintForge as a library instead: add it as a `dev_dependency` in
+the project you want to lint, implement `AnalyzerRule`, register it with a
+`RuleRegistry`, and pass the registry to `AnalysisRunner` from a small
+entrypoint you run with `dart run`:
 
 ```dart
 import 'package:lintforge/lintforge.dart';
@@ -528,12 +541,12 @@ fvm dart run lintforge samples/unused_function/lib
 
 ## Development
 
-This repository uses FVM to pin Flutter. Install the configured SDK before
-working locally:
+LintForge is a pure-Dart package. This repository uses FVM to pin the SDK
+version. Install the configured SDK before working locally:
 
 ```sh
 fvm install
-fvm flutter pub get
+fvm dart pub get
 ```
 
 Before opening a pull request, run the same checks as CI:
@@ -541,7 +554,7 @@ Before opening a pull request, run the same checks as CI:
 ```sh
 fvm dart format .
 fvm dart analyze --fatal-infos --fatal-warnings
-fvm flutter test --coverage
+fvm dart test --coverage=coverage
 fvm dart pub publish --dry-run
 ```
 
@@ -551,8 +564,9 @@ LintForge is pre-1.0.0. The framework — rule contracts, the registry, the
 single-file and multi-file runners, the CLI, and the built-in `unused_function`,
 `unused_class`, and `unused_source_file` rules — is working today and exercised by
 the sample projects under [`samples/`](samples/). Public APIs may still change
-between minor versions while the framework matures, so pin a specific version in
-your `pubspec.yaml` if you need repeatable behavior. Additional built-in rules,
+between minor versions while the framework matures, so pin a specific version
+with `dart pub global activate lintforge <version>` if you need repeatable
+behavior. Additional built-in rules,
 including broader unused-declaration detection and `const` suggestions, are
 planned.
 

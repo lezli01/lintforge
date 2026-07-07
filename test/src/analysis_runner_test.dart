@@ -14,7 +14,7 @@ import 'package:lintforge/src/rules/unused_function_rule.dart';
 import 'package:lintforge/src/rules/unused_source_file_rule.dart';
 import 'package:lintforge/src/severity.dart';
 import 'package:lintforge/src/source_location.dart';
-import 'package:flutter_test/flutter_test.dart';
+import 'package:test/test.dart';
 import 'package:path/path.dart' as p;
 
 class _AlwaysFiresRule implements AnalyzerRule {
