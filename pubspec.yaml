@@ -1,6 +1,6 @@
 name: lintforge
 description: LintForge is a pluggable static analysis tool for Dart and Flutter projects with an extensible runner, rule registry, and a standalone CLI you install globally.
-version: 0.4.0
+version: 0.4.1
 homepage: https://github.com/lezli01/lintforge
 repository: https://github.com/lezli01/lintforge
 issue_tracker: https://github.com/lezli01/lintforge/issues

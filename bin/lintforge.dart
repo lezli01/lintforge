@@ -15,7 +15,7 @@ import 'package:lintforge/src/terminal/progress_reporter.dart';
 import 'package:args/args.dart';
 import 'package:path/path.dart' as p;
 
-const String _version = '0.4.0'; // x-release-please-version
+const String _version = '0.4.1'; // x-release-please-version
 
 Future<void> main(List<String> arguments) async {
   final parser = _buildArgParser();
