@@ -1,5 +1,18 @@
 # Changelog
 
+## [0.4.0](https://github.com/lezli01/lintforge/compare/v0.3.9...v0.4.0) (2026-07-07)
+
+
+### ⚠ BREAKING CHANGES
+
+* from dependency to standalone tool
+
+### Features
+
+* **cli:** run lintforge as a standalone globally-activated tool ([5377881](https://github.com/lezli01/lintforge/commit/53778814b8742bc1826eba4128c939ad97d10ac7))
+* **cli:** run lintforge as a standalone globally-activated tool ([#49](https://github.com/lezli01/lintforge/issues/49)) ([4f584c3](https://github.com/lezli01/lintforge/commit/4f584c39a2a0d2a783dab8abb7a3d7a6fb097a55))
+* from dependency to standalone tool ([f65781e](https://github.com/lezli01/lintforge/commit/f65781e3ad3d5e29f829847320a3ba5ad81e377e))
+
 ## [0.3.9](https://github.com/lezli01/lintforge/compare/v0.3.8...v0.3.9) (2026-07-04)
 
 
