@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.4.1](https://github.com/lezli01/lintforge/compare/v0.4.0...v0.4.1) (2026-07-08)
+
+
+### Bug Fixes
+
+* **unused_function:** exempt freezed underscore constructors ([c79c95c](https://github.com/lezli01/lintforge/commit/c79c95c12e5a63d7270c2de59fa6836e86276f77))
+* **unused_function:** exempt freezed underscore constructors ([#52](https://github.com/lezli01/lintforge/issues/52)) ([584e2c4](https://github.com/lezli01/lintforge/commit/584e2c428b799d8e074729f48a7948bc06fc18f8))
+
 ## [0.4.0](https://github.com/lezli01/lintforge/compare/v0.3.9...v0.4.0) (2026-07-07)
 
 
