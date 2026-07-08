@@ -589,6 +589,8 @@ Element _declaredElement(Element element) => element.baseElement;
 /// and the constructor-invocation form (`@Freezed(...)`, `@Unfreezed(...)`,
 /// `@FreezedUnion(...)`), as well as the prefixed forms
 /// (`@freezed_annotation.freezed`, `@freezed_annotation.Freezed`).
+/// The analyzer may represent the identifier after a prefix as an
+/// [Annotation.constructorName], so both annotation-name slots are checked.
 ///
 /// `package:freezed`'s code generator stamps the annotated class with
 /// boilerplate constructors — a private generative `Foo._()`, an
@@ -602,23 +604,33 @@ Element _declaredElement(Element element) => element.baseElement;
 /// generated parts to be present.
 bool _hasFreezedAnnotation(NodeList<Annotation> metadata) {
   for (final annotation in metadata) {
-    final identifier = annotation.name;
-    final simpleName = identifier is SimpleIdentifier
-        ? identifier.name
-        : identifier is PrefixedIdentifier
-        ? identifier.identifier.name
-        : '';
-    switch (simpleName) {
-      case 'freezed':
-      case 'Freezed':
-      case 'unfreezed':
-      case 'Unfreezed':
-      case 'FreezedUnion':
-        return true;
+    for (final name in _annotationSimpleNames(annotation)) {
+      if (_isFreezedAnnotationName(name)) return true;
     }
   }
   return false;
 }
+
+Iterable<String> _annotationSimpleNames(Annotation annotation) sync* {
+  final identifier = annotation.name;
+  if (identifier is SimpleIdentifier) {
+    yield identifier.name;
+  } else if (identifier is PrefixedIdentifier) {
+    yield identifier.identifier.name;
+  }
+
+  final constructorName = annotation.constructorName;
+  if (constructorName != null) yield constructorName.name;
+}
+
+bool _isFreezedAnnotationName(String name) => switch (name) {
+  'freezed' ||
+  'Freezed' ||
+  'unfreezed' ||
+  'Unfreezed' ||
+  'FreezedUnion' => true,
+  _ => false,
+};
 
 bool _hasVmEntryPointPragma(NodeList<Annotation> metadata) {
   for (final annotation in metadata) {

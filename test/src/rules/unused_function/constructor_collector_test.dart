@@ -299,6 +299,48 @@ void main() {}
       }
     });
 
+    test(
+      '@freezed skips an unreferenced private underscore constructor',
+      () async {
+        final diagnostics = await runRule('''
+const freezed = Object();
+
+@freezed
+class FreezedFoo {
+  FreezedFoo._();
+  factory FreezedFoo() => throw UnimplementedError();
+}
+void main() {
+  FreezedFoo();
+}
+''');
+        expect(_constructorDiagnosticsNamed(diagnostics, '_'), isEmpty);
+      },
+    );
+
+    test('prefixed @Freezed() annotation is recognized', () async {
+      final annotations = File(p.join(tempDir.path, 'annotations.dart'));
+      annotations.writeAsStringSync('''
+class Freezed {
+  const Freezed();
+}
+''');
+
+      final diagnostics = await runRule('''
+import 'annotations.dart' as freezed_annotation;
+
+@freezed_annotation.Freezed()
+class FreezedFoo {
+  FreezedFoo._();
+  factory FreezedFoo() => throw UnimplementedError();
+}
+void main() {
+  FreezedFoo();
+}
+''');
+      expect(_constructorDiagnosticsNamed(diagnostics, '_'), isEmpty);
+    });
+
     test('@unfreezed is recognized', () async {
       final diagnostics = await runRule('''
 const unfreezed = Object();
@@ -333,7 +375,32 @@ void main() {
       expect(diagnostics.single.message, contains('unused'));
       expect(diagnostics.single.message, contains('constructor'));
     });
+
+    test('non-freezed class still flags an unused private underscore '
+        'constructor', () async {
+      final diagnostics = await runRule('''
+class PlainFoo {
+  PlainFoo._();
+  factory PlainFoo() => throw UnimplementedError();
+}
+void main() {
+  PlainFoo();
+}
+''');
+      expect(_constructorDiagnosticsNamed(diagnostics, '_'), hasLength(1));
+    });
   });
+}
+
+Iterable<Diagnostic> _constructorDiagnosticsNamed(
+  List<Diagnostic> diagnostics,
+  String name,
+) {
+  return diagnostics.where(
+    (diagnostic) =>
+        diagnostic.ruleId == 'unused_function' &&
+        diagnostic.message.contains('constructor "$name"'),
+  );
 }
 
 String? _resolveSdkPath() {
