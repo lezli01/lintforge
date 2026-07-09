@@ -265,7 +265,8 @@ local function findings nested inside its body.
 5. Share/generated-code detection across unused rules. **Status: done
    2026-07-09.**
 6. Validate unknown `--rules` ids. **Status: done 2026-07-09.**
-7. Decide whether `unused_class` should become multi-file.
+7. Decide whether `unused_class` should become multi-file. **Status: done
+   2026-07-09.**
 8. Narrow conditional branch suppression.
 9. Add executable-level nested suppression for local functions.
 
@@ -331,6 +332,23 @@ local function findings nested inside its body.
 - Validation: `fvm dart format` on touched Dart files; focused
   `test/bin/lintforge_cli_test.dart`; `fvm dart analyze`; full
   `fvm flutter test`.
+- 2026-07-09: Started item 7. Chose to promote `unused_class` to a
+  multi-file rule while keeping its current private-type reporting policy,
+  so cross-file references can keep private declarations alive without
+  widening the public API surface being diagnosed.
+- 2026-07-09: Completed item 7. `unused_class` now runs as a multi-file
+  rule, builds a global type-reference set from every resolved unit, emits
+  diagnostics only for reportable files, and analyzes part libraries when
+  every resolved fragment is present in the run. Incomplete part libraries
+  remain skipped to avoid false positives from missing sibling parts. CLI and
+  test registries now register it through `registerMultiFile`, and rule
+  listing output is sorted by id so the public order stays stable across the
+  namespace move. Updated the rule docs, README, architecture note, and
+  changelog.
+- Validation: `fvm dart format` on touched Dart files; focused
+  `test/src/rules/unused_class_rule_test.dart`; focused CLI/runner tests;
+  `fvm flutter test test/samples_test.dart --reporter=expanded`;
+  `fvm dart analyze`; full `fvm flutter test`.
 
 ## Notes
 

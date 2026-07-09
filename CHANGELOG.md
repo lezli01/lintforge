@@ -1,5 +1,13 @@
 # Changelog
 
+## Unreleased
+
+### Changed
+
+- Promoted `unused_class` to multi-file analysis so private class-like
+  declarations can be kept alive by references from sibling `part` files while
+  still reporting only on files eligible for diagnostics.
+
 ## [0.4.1](https://github.com/lezli01/lintforge/compare/v0.4.0...v0.4.1) (2026-07-08)
 
 

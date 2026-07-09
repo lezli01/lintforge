@@ -244,10 +244,10 @@ Per built-in rule:
   as reached, and a non-excluded file can reach an excluded one.
   Excluded files are never themselves reported as unused, regardless of
   whether anything in the analyzed set imports them.
-- **`unused_class`** — file-local. The rule only inspects references
-  within the same compilation unit, so excluded-files-as-references has
-  no effect beyond the standard "excluded files are never reported on"
-  guarantee.
+- **`unused_class`** — references in excluded files count as uses of
+  private class-like declarations in reportable files, including references
+  from excluded generated part files. Excluded files are still never reported
+  on directly.
 
 ## Built-In Rules
 
@@ -374,9 +374,12 @@ Deliberately not flagged:
 
 - **Id:** `unused_class`
 - **Default severity:** `warning`
+- **Dispatch:** multi-file (registered via `registerMultiFile`); the rule sees
+  every resolved compilation unit in the analyzed set on a single invocation
+  and resolves references across complete libraries.
 
-Flags file-local declarations whose names begin with `_` that are never
-referenced within the same compilation unit:
+Flags private declarations whose names begin with `_` that are never
+referenced anywhere in their complete analyzed library:
 
 - `class` declarations (including `abstract`, `base`, `final`, `sealed`,
   and `interface` modifiers);
@@ -386,8 +389,9 @@ referenced within the same compilation unit:
 
 Any reference to the declaration counts as a use, including type
 annotations, constructor invocations, `extends`/`implements`/`with`/`on`
-clauses, `is`/`as` checks, static-member access, enum-value access, and
-constructor or static tear-offs. The rule is Dart 3 feature-aware: it
+clauses, `is`/`as` checks, static-member access, enum-value access,
+constructor or static tear-offs, and references from sibling `part` files.
+The rule is Dart 3 feature-aware: it
 also follows Dart 3 object patterns (`case _Foo()` in a `switch`),
 record type annotations (`(_Foo, int)`), and exhaustive `switch` on a
 `sealed` supertype — so a private type referenced only through its
@@ -403,7 +407,8 @@ Deliberately not flagged in this release:
 - any private candidate declared in a library that imports
   `dart:mirrors` — reflection can name arbitrary types at runtime, so
   the rule conservatively skips the whole unit;
-- files belonging to libraries that have `part` files;
+- libraries with `part` files when one or more resolved fragments are missing
+  from the analyzed set;
 - types declared in a file `unused_source_file` reports as unreachable —
   the whole file is already flagged, so re-flagging each type inside it would
   just repeat the report (see [Rule interaction](#rule-interaction)).

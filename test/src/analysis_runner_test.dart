@@ -542,7 +542,7 @@ void main() {
 
     RuleRegistry buildRegistry() => RuleRegistry()
       ..registerMultiFile(UnusedFunctionRule())
-      ..register(UnusedClassRule())
+      ..registerMultiFile(UnusedClassRule())
       ..registerMultiFile(UnusedSourceFileRule());
 
     Future<List<Diagnostic>> run() async {

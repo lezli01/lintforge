@@ -278,7 +278,7 @@ String _usage(ArgParser parser, Ansi ansi) {
 RuleRegistry _buildRegistry() {
   final registry = RuleRegistry();
   registry.registerMultiFile(UnusedFunctionRule());
-  registry.register(UnusedClassRule());
+  registry.registerMultiFile(UnusedClassRule());
   registry.registerMultiFile(UnusedSourceFileRule());
   return registry;
 }
@@ -297,7 +297,7 @@ void _printRuleListing(RuleRegistry registry, StringSink out, Ansi ansi) {
         severity: rule.defaultSeverity,
         description: rule.description,
       ),
-  ];
+  ]..sort((a, b) => a.id.compareTo(b.id));
 
   var idWidth = 0;
   for (final entry in entries) {
