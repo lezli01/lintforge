@@ -335,12 +335,13 @@ Deliberately not flagged:
   API surface, reachable by external consumers and exercised by tests, so
   "no references found in the analyzed set" cannot prove them unused.
   Private members, and members of private types, are still flagged;
-- declarations and members in the *non-selected* branch file of a
-  conditional export or import (`export 'stub.dart' if (dart.library.html)
-  'web.dart';`) — the analyzer resolves each directive to a single branch
-  per build target, but every `if (…)` configuration branch is a real
-  reference, so members reachable only through a non-selected branch are
-  exempt rather than flagged as dead;
+- public declarations and public members on public declarations in the
+  *non-selected* branch file of a conditional export or import
+  (`export 'stub.dart' if (dart.library.html) 'web.dart';`) — the analyzer
+  resolves each directive to a single branch per build target, but every
+  `if (…)` configuration branch is a real reference, so platform-facing branch
+  API is exempt rather than flagged as dead. Private helpers in branch files
+  are still flagged when unreferenced;
 - `external` declarations of any shape;
 - declarations annotated with `@pragma('vm:entry-point')`;
 - top-level functions, getters, and setters declared in a library that has

@@ -84,6 +84,10 @@ class _ExtensionMemberCollector implements _UnusedFunctionCandidateCollector {
       nameToken: anchor,
       element: _declaredElement(element),
       kindLabel: _kindLabel(declaration),
+      isConditionalBranchApi: _isPublicMemberOfPublicType(
+        declaration.name.lexeme,
+        enclosingTypeName,
+      ),
     );
   }
 

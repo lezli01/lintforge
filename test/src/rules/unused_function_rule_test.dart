@@ -125,6 +125,36 @@ void main() {
     });
 
     test(
+      'suppresses unused local functions inside unused executables',
+      () async {
+        final diagnostics = await runRule('''
+void _outer() {
+  void nestedInFunction() {}
+}
+
+class _Host {
+  void unusedMethod() {
+    void nestedInMethod() {}
+  }
+}
+
+void main() {
+  _Host();
+}
+''');
+
+        expect(diagnostics, hasLength(2));
+        final messages = diagnostics
+            .map((diagnostic) => diagnostic.message)
+            .join('\n');
+        expect(messages, contains('_outer'));
+        expect(messages, contains('unusedMethod'));
+        expect(messages, isNot(contains('nestedInFunction')));
+        expect(messages, isNot(contains('nestedInMethod')));
+      },
+    );
+
+    test(
       'reports multiple unused functions sorted by line and column',
       () async {
         final diagnostics = await runRule(

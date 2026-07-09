@@ -119,6 +119,10 @@ class _ConstructorCollector implements _UnusedFunctionCandidateCollector {
       nameToken: nameToken,
       element: _declaredElement(element),
       kindLabel: 'constructor',
+      isConditionalBranchApi: _isPublicMemberOfPublicType(
+        nameToken.lexeme,
+        enclosingTypeName,
+      ),
     );
   }
 }

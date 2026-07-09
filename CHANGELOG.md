@@ -7,6 +7,10 @@
 - Promoted `unused_class` to multi-file analysis so private class-like
   declarations can be kept alive by references from sibling `part` files while
   still reporting only on files eligible for diagnostics.
+- Narrowed `unused_function` conditional branch exemptions to public branch
+  API, so private helpers in branch files can still be reported.
+- Suppressed `unused_function` local-function diagnostics nested inside an
+  unused enclosing executable already reported by the rule.
 
 ## [0.4.1](https://github.com/lezli01/lintforge/compare/v0.4.0...v0.4.1) (2026-07-08)
 

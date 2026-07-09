@@ -85,7 +85,8 @@ The rule deliberately skips:
 - members and constructors whose supertype chain uses `noSuchMethod`
 - members of `Fake` or `Mock` style test doubles
 - overrides of reachable supertype members, with or without `@override`
-- declarations in non-selected conditional import/export branch files
+- public branch-surface declarations in non-selected conditional import/export
+  branch files
 - constructors of classes annotated with Freezed-style annotations
 - members of private, unreferenced enclosing types
 - declarations in files already reported by `unused_source_file`
@@ -99,8 +100,10 @@ export 'mobile.dart' if (dart.library.html) 'web.dart';
 ```
 
 resolves to one branch for the current analysis platform. LintForge still treats
-every configured branch as reachable. This prevents false positives in branch
-files that are part of the package surface for a different target.
+every configured branch as reachable for public declarations and public members
+on public declarations. This prevents false positives in branch files that are
+part of the package surface for a different target while still reporting
+unreferenced private helpers in those files.
 
 ## Generated code
 

@@ -145,13 +145,13 @@ part 'unused_function/top_level_function_collector.dart';
 /// * **Conditional-export/import branch targets.** A conditional
 ///   directive (`export 'stub.dart' if (dart.library.html)
 ///   'x_web.dart';`) resolves to exactly one branch at analysis time,
-///   so declarations and members in the *non-selected* branch files are
-///   reached only through the wrapper library's public export surface
-///   and look unreferenced. The rule collects the file path of every
-///   configuration branch URI of any export/import directive across the
-///   analyzed unit set and skips every candidate declared in such a
-///   file — the whole file is treated as part of the platform export
-///   surface. See [_conditionalBranchTargetPaths].
+///   so public declarations and members in the *non-selected* branch
+///   files are reached only through the wrapper library's platform
+///   surface and look unreferenced. The rule collects the file path of
+///   every configuration branch URI of any export/import directive
+///   across the analyzed unit set and exempts only candidates that form
+///   that public branch surface. Private helpers inside branch files
+///   remain eligible for diagnostics. See [_conditionalBranchTargetPaths].
 ///
 /// **Features that flow through existing visitors with no extra
 /// handling.** The following language features do not need
@@ -219,11 +219,14 @@ class UnusedFunctionRule implements MultiFileAnalyzerRule {
 
     final conditionalBranchPaths = _conditionalBranchTargetPaths(context.units);
 
-    final diagnostics = <Diagnostic>[];
+    final pendingDiagnostics =
+        <({String filePath, LineInfo lineInfo, _Candidate candidate})>[];
     for (final unit in context.units) {
       if (!context.reportableFilePaths.contains(unit.path)) continue;
-      if (conditionalBranchPaths.contains(unit.path)) continue;
       if (isGeneratedSourceFile(unit.path, unit.unit)) continue;
+      final isConditionalBranchTarget = conditionalBranchPaths.contains(
+        unit.path,
+      );
       final skipMemberCandidates = _unitImportsDartMirrors(unit.unit);
       for (final collector in collectors) {
         if (skipMemberCandidates &&
@@ -231,6 +234,9 @@ class UnusedFunctionRule implements MultiFileAnalyzerRule {
           continue;
         }
         for (final candidate in collector.collect(unit, collectorContext)) {
+          if (isConditionalBranchTarget && candidate.isConditionalBranchApi) {
+            continue;
+          }
           if (globalReferences.contains(candidate.element)) continue;
           if (_enclosingTypeIsUnflaggedUnreferencedPrivate(
             candidate.element,
@@ -238,15 +244,30 @@ class UnusedFunctionRule implements MultiFileAnalyzerRule {
           )) {
             continue;
           }
-          diagnostics.add(
-            _buildDiagnostic(
-              candidate: candidate,
-              filePath: unit.path,
-              lineInfo: unit.lineInfo,
-            ),
-          );
+          pendingDiagnostics.add((
+            candidate: candidate,
+            filePath: unit.path,
+            lineInfo: unit.lineInfo,
+          ));
         }
       }
+    }
+
+    final reportedElements = <Element>{
+      for (final pending in pendingDiagnostics) pending.candidate.element,
+    };
+    final diagnostics = <Diagnostic>[];
+    for (final pending in pendingDiagnostics) {
+      if (_isNestedInReportedExecutable(pending.candidate, reportedElements)) {
+        continue;
+      }
+      diagnostics.add(
+        _buildDiagnostic(
+          candidate: pending.candidate,
+          filePath: pending.filePath,
+          lineInfo: pending.lineInfo,
+        ),
+      );
     }
 
     diagnostics.sort((a, b) {
@@ -269,6 +290,19 @@ class UnusedFunctionRule implements MultiFileAnalyzerRule {
     final name = enclosing.name;
     if (name == null || !name.startsWith('_')) return false;
     return !globalReferences.contains(enclosing);
+  }
+
+  bool _isNestedInReportedExecutable(
+    _Candidate candidate,
+    Set<Element> reportedElements,
+  ) {
+    if (candidate.kindLabel != 'local function') return false;
+    for (final enclosing in candidate.enclosingExecutableElements) {
+      if (reportedElements.contains(enclosing)) {
+        return true;
+      }
+    }
+    return false;
   }
 
   Diagnostic _buildDiagnostic({
@@ -347,9 +381,9 @@ bool _unitImportsDartMirrors(CompilationUnit unit) {
 /// Imports and Exports" — treat all candidate URIs as reachable), so
 /// this collects each [Configuration.resolvedUri] that resolves to a
 /// [DirectiveUriWithSource] and returns the full set of branch-target
-/// source paths. The dispatch site skips every candidate declared in one
-/// of these files, treating the whole file as part of the platform
-/// export surface.
+/// source paths. The dispatch site exempts public branch-surface
+/// candidates declared in these files while continuing to report private
+/// helpers that are not part of the platform-facing API.
 Set<String> _conditionalBranchTargetPaths(Iterable<ResolvedUnitResult> units) {
   final paths = <String>{};
   for (final unit in units) {
@@ -654,11 +688,15 @@ class _Candidate {
   final Token nameToken;
   final Element element;
   final String kindLabel;
+  final bool isConditionalBranchApi;
+  final List<Element> enclosingExecutableElements;
 
   const _Candidate({
     required this.nameToken,
     required this.element,
     required this.kindLabel,
+    this.isConditionalBranchApi = false,
+    this.enclosingExecutableElements = const <Element>[],
   });
 }
 

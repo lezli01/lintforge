@@ -47,6 +47,7 @@ class _TopLevelFunctionCollector implements _UnusedFunctionCandidateCollector {
         nameToken: declaration.name,
         element: _declaredElement(element),
         kindLabel: 'top-level function',
+        isConditionalBranchApi: !declaration.name.lexeme.startsWith('_'),
       );
     }
   }

@@ -11,10 +11,9 @@
 //
 // The `unused_function` rule collects the file path of every
 // configuration branch URI of an export/import directive across the
-// analyzed unit set and skips every candidate declared in such a file:
-// the whole branch file is treated as part of the platform export
-// surface. Both `platform_io.dart` and `platform_web.dart` are listed as
-// `if (...)` configurations, so members of neither file are flagged.
+// analyzed unit set and exempts public branch-surface candidates in
+// such files. Both `platform_io.dart` and `platform_web.dart` are listed
+// as `if (...)` configurations, so their public members are not flagged.
 //
 // The wrapper itself declares nothing, so it contributes no candidates;
 // it is imported from the sample's entry point purely so the

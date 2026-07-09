@@ -267,8 +267,9 @@ local function findings nested inside its body.
 6. Validate unknown `--rules` ids. **Status: done 2026-07-09.**
 7. Decide whether `unused_class` should become multi-file. **Status: done
    2026-07-09.**
-8. Narrow conditional branch suppression.
-9. Add executable-level nested suppression for local functions.
+8. Narrow conditional branch suppression. **Status: done 2026-07-09.**
+9. Add executable-level nested suppression for local functions. **Status: done
+   2026-07-09.**
 
 ## Implementation Progress
 
@@ -348,6 +349,19 @@ local function findings nested inside its body.
 - Validation: `fvm dart format` on touched Dart files; focused
   `test/src/rules/unused_class_rule_test.dart`; focused CLI/runner tests;
   `fvm flutter test test/samples_test.dart --reporter=expanded`;
+  `fvm dart analyze`; full `fvm flutter test`.
+- 2026-07-09: Completed item 8. Conditional import/export branch target files
+  now still run through the `unused_function` collectors, but the dispatch site
+  only exempts candidates that form public branch API: public top-level
+  declarations and public members or constructors on public enclosing
+  declarations. Private helpers inside branch files remain reportable.
+- 2026-07-09: Completed item 9. Local-function candidates now carry their
+  enclosing executable elements from the AST. When an outer function, method, or
+  constructor is already reported as unused, nested unused local-function
+  diagnostics are suppressed to avoid duplicate executable-level noise.
+- Validation: `fvm dart format` on touched Dart files; focused
+  `test/src/rules/unused_function_rule_test.dart` and
+  `test/src/rules/unused_function/conditional_export_test.dart`;
   `fvm dart analyze`; full `fvm flutter test`.
 
 ## Notes

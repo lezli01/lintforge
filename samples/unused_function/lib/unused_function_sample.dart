@@ -24,8 +24,8 @@ import 'src/mirrors_user.dart';
 // (N22) Importing the conditional-export wrapper keeps it — and both of
 // the platform branch files it names in `if (...)` configurations —
 // reachable for `unused_source_file`. Nothing here references a symbol
-// from the wrapper; the branch files' members are exempt from
-// `unused_function` purely as conditional-export branch targets.
+// from the wrapper; the branch files' public members are exempt from
+// `unused_function` as conditional-export branch surface.
 import 'src/platform_export.dart';
 
 // === POSITIVE CASES (MUST trigger unused_function) ===
