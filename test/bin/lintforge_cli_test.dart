@@ -116,6 +116,38 @@ void main() {
     }
 
     test(
+      'unknown --rules ids fail with usage and available ids',
+      timeout: const Timeout(Duration(minutes: 2)),
+      () async {
+        write(p.join('lib', 'main.dart'), 'void main() {}\n');
+
+        final result = await runLintforge(
+          ['--rules', 'unused_function,unused_functon', tempDir.path],
+          environment: const {'NO_COLOR': '1', 'FORCE_COLOR': ''},
+        );
+        final stdoutText = result.stdout as String;
+        final stderrText = result.stderr as String;
+
+        expect(
+          result.exitCode,
+          64,
+          reason: 'stdout: $stdoutText\nstderr: $stderrText',
+        );
+        expect(stdoutText, isEmpty);
+        expect(stderrText, contains('Unknown rule id: unused_functon.'));
+        expect(
+          stderrText,
+          contains(
+            'Available rule ids: unused_class, unused_function, '
+            'unused_source_file.',
+          ),
+        );
+        expect(stderrText, contains('Usage:'));
+        expect(stderrText, isNot(contains('No issues found')));
+      },
+    );
+
+    test(
       'a clean project reports no issues, exits 0, and emits no color '
       'when stdout is a pipe',
       timeout: const Timeout(Duration(minutes: 2)),

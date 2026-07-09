@@ -264,7 +264,7 @@ local function findings nested inside its body.
    2026-07-09.**
 5. Share/generated-code detection across unused rules. **Status: done
    2026-07-09.**
-6. Validate unknown `--rules` ids.
+6. Validate unknown `--rules` ids. **Status: done 2026-07-09.**
 7. Decide whether `unused_class` should become multi-file.
 8. Narrow conditional branch suppression.
 9. Add executable-level nested suppression for local functions.
@@ -322,6 +322,14 @@ local function findings nested inside its body.
   generated basename.
 - Validation: `fvm dart format` on touched Dart files; `fvm dart analyze`;
   focused `unused_source_file` and `unused_function` tests; full
+  `fvm flutter test`.
+- 2026-07-09: Completed item 6. Added CLI validation for requested
+  `--rules` ids after registry construction, so any unknown id exits with
+  usage output and code 64 before analysis starts. The error lists the
+  available built-in rule ids, and the CLI reference now documents the
+  failure behavior.
+- Validation: `fvm dart format` on touched Dart files; focused
+  `test/bin/lintforge_cli_test.dart`; `fvm dart analyze`; full
   `fvm flutter test`.
 
 ## Notes
