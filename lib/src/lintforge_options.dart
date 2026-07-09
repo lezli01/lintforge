@@ -33,8 +33,8 @@ class LintforgeOptions {
   /// `.dart_tool/` or build artefacts under `build/`.
   ///
   /// Patterns are matched against the file's basename, its path relative
-  /// to the current working directory, and its absolute path (any match
-  /// excludes the file).
+  /// to each analyzed include root, its path relative to the current working
+  /// directory, and its absolute path (any match excludes the file).
   static const List<String> defaultExcludePaths = <String>[
     '*.g.dart',
     '*.freezed.dart',

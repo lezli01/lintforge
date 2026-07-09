@@ -195,28 +195,41 @@ class AnalysisRunner {
         _ExcludeGlob(_toPosix(pattern)),
     ];
 
-    final found = <String>{};
+    final found = <String, Set<String>>{};
+
+    void addFoundFile(String path, String relativeFrom) {
+      final normalized = p.normalize(path);
+      if (!normalized.endsWith('.dart')) return;
+      final relativeCandidates = found.putIfAbsent(
+        normalized,
+        () => <String>{},
+      );
+      relativeCandidates.add(
+        _toPosix(p.relative(normalized, from: relativeFrom)),
+      );
+    }
+
     for (final include in options.includePaths) {
       final absolute = p.normalize(
         p.isAbsolute(include) ? include : p.absolute(include),
       );
       final type = FileSystemEntity.typeSync(absolute);
       if (type == FileSystemEntityType.file) {
-        if (absolute.endsWith('.dart')) found.add(absolute);
+        addFoundFile(absolute, p.dirname(absolute));
       } else if (type == FileSystemEntityType.directory) {
         for (final entity in Directory(
           absolute,
         ).listSync(recursive: true, followLinks: false)) {
-          if (entity is File && entity.path.endsWith('.dart')) {
-            found.add(p.normalize(entity.path));
+          if (entity is File) {
+            addFoundFile(entity.path, absolute);
           }
         }
       } else {
         // Treat as a glob pattern relative to the current directory.
         final glob = Glob(include);
         for (final entity in glob.listSync(followLinks: false)) {
-          if (entity is File && entity.path.endsWith('.dart')) {
-            found.add(p.normalize(p.absolute(entity.path)));
+          if (entity is File) {
+            addFoundFile(p.absolute(entity.path), Directory.current.path);
           }
         }
       }
@@ -224,8 +237,9 @@ class AnalysisRunner {
 
     final reportable = <String>[];
     final supplementary = <String>[];
-    for (final file in found) {
-      if (_isExcluded(file, excludeGlobs)) {
+    for (final entry in found.entries) {
+      final file = entry.key;
+      if (_isExcluded(file, excludeGlobs, entry.value)) {
         supplementary.add(file);
       } else {
         reportable.add(file);
@@ -236,19 +250,24 @@ class AnalysisRunner {
     return (reportable, supplementary);
   }
 
-  bool _isExcluded(String file, List<_ExcludeGlob> globs) {
+  bool _isExcluded(
+    String file,
+    List<_ExcludeGlob> globs,
+    Set<String> includeRelativeCandidates,
+  ) {
     if (globs.isEmpty) return false;
     final posixAbsolute = _toPosix(file);
-    final candidates = <String>[
+    final candidates = <String>{
       _toPosix(p.basename(file)),
       _toPosix(p.relative(file, from: Directory.current.path)),
+      ...includeRelativeCandidates.map(_toPosix),
       posixAbsolute,
       // `glob` (>=2.1.3) will not match a `**/…/**` pattern against a path
       // with a leading `/`, so also offer the absolute path with its leading
       // separator stripped. This keeps the documented "matched against its
       // absolute path" behavior working for recursive segment patterns.
       if (posixAbsolute.startsWith('/')) posixAbsolute.substring(1),
-    ];
+    };
     for (final exclude in globs) {
       for (final candidate in candidates) {
         if (exclude.matches(candidate)) return true;

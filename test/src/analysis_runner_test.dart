@@ -150,18 +150,14 @@ void main() {
 
   group('AnalysisRunner exclude matching', () {
     late Directory tempDir;
-    late String savedCwd;
 
     setUp(() {
-      savedCwd = Directory.current.path;
       tempDir = Directory.systemTemp.createTempSync(
         'lintforge_runner_exclude_',
       );
-      Directory.current = tempDir.path;
     });
 
     tearDown(() {
-      Directory.current = savedCwd;
       if (tempDir.existsSync()) {
         tempDir.deleteSync(recursive: true);
       }
@@ -468,18 +464,14 @@ void main() {
 
   group('AnalysisRunner default excludes regression', () {
     late Directory tempDir;
-    late String savedCwd;
 
     setUp(() {
-      savedCwd = Directory.current.path;
       tempDir = Directory.systemTemp.createTempSync(
         'lintforge_runner_defaults_regression_',
       );
-      Directory.current = tempDir.path;
     });
 
     tearDown(() {
-      Directory.current = savedCwd;
       if (tempDir.existsSync()) {
         tempDir.deleteSync(recursive: true);
       }

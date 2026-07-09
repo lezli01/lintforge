@@ -260,7 +260,8 @@ local function findings nested inside its body.
 1. Fix public constructor API exemption. **Status: done 2026-07-09.**
 2. Fix private extension silence. **Status: done 2026-07-09.**
 3. Make samples pure Dart and executable again. **Status: done 2026-07-09.**
-4. Fix test isolation or force serial test execution in CI.
+4. Fix test isolation or force serial test execution in CI. **Status: done
+   2026-07-09.**
 5. Share/generated-code detection across unused rules.
 6. Validate unknown `--rules` ids.
 7. Decide whether `unused_class` should become multi-file.
@@ -300,6 +301,16 @@ local function findings nested inside its body.
   --reporter=expanded`; direct CLI probes for `samples/unused_function`,
   `samples/unused_class`, `samples/unused_source_file`, and
   `samples/all_rules` reported the expected 6, 5, 1, and 12 diagnostics.
+- 2026-07-09: Completed item 4. Removed the process-wide
+  `Directory.current` mutations from the `AnalysisRunner`
+  exclude/default-exclude test fixtures so parallel test files no longer
+  inherit a temporary working directory while sample tests are resolving
+  `samples/...`. The runner now also matches exclude patterns against each
+  discovered file's path relative to the include root that found it, preserving
+  default `.dart_tool/` and `build/` exclusions for absolute include paths
+  without changing the process CWD.
+- Validation: focused parallel runner/sample tests; `fvm dart analyze`; plain
+  parallel `fvm dart test --reporter=expanded`; `fvm flutter test`.
 
 ## Notes
 
