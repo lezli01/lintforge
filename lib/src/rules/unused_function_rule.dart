@@ -232,7 +232,7 @@ class UnusedFunctionRule implements MultiFileAnalyzerRule {
         }
         for (final candidate in collector.collect(unit, collectorContext)) {
           if (globalReferences.contains(candidate.element)) continue;
-          if (_enclosingClassIsUnflaggedUnreferencedPrivate(
+          if (_enclosingTypeIsUnflaggedUnreferencedPrivate(
             candidate.element,
             globalReferences,
           )) {
@@ -260,19 +260,13 @@ class UnusedFunctionRule implements MultiFileAnalyzerRule {
     return diagnostics;
   }
 
-  bool _enclosingClassIsUnflaggedUnreferencedPrivate(
+  bool _enclosingTypeIsUnflaggedUnreferencedPrivate(
     Element element,
     Set<Element> globalReferences,
   ) {
     final enclosing = element.enclosingElement;
-    final String? name;
-    if (enclosing is InterfaceElement) {
-      name = enclosing.name;
-    } else if (enclosing is ExtensionElement) {
-      name = enclosing.name;
-    } else {
-      return false;
-    }
+    if (enclosing is! InterfaceElement) return false;
+    final name = enclosing.name;
     if (name == null || !name.startsWith('_')) return false;
     return !globalReferences.contains(enclosing);
   }

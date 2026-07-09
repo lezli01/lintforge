@@ -1,8 +1,9 @@
 // Sample file exercising the `unused_class` rule.
 //
 // The expected diagnostics for this file are documented in this sample's
-// README. Four declarations in this file MUST be flagged; everything else
-// MUST be silent.
+// README. Four declarations in this file MUST be flagged by unused_class.
+// In a full all-rule run, the N9 extension member is also flagged by
+// unused_function.
 library;
 
 // === POSITIVE CASES (MUST trigger unused_class) ===
@@ -67,7 +68,8 @@ mixin _AliasMixin {}
 class _Alias = _AliasBase with _AliasMixin;
 
 // (N9) `extension _Ext on T {}` declaration — explicitly out of scope for
-// the rule (only extension *types* are inspected).
+// unused_class (only extension *types* are inspected). Its member is left
+// unused so unused_function can report it in all-rule runs.
 extension _Ext on int {
   int get doubled => this * 2;
 }

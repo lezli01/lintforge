@@ -258,7 +258,7 @@ local function findings nested inside its body.
 ## Suggested Fix Order
 
 1. Fix public constructor API exemption. **Status: done 2026-07-09.**
-2. Fix private extension silence.
+2. Fix private extension silence. **Status: done 2026-07-09.**
 3. Make samples pure Dart and executable again.
 4. Fix test isolation or force serial test execution in CI.
 5. Share/generated-code detection across unused rules.
@@ -278,9 +278,18 @@ local function findings nested inside its body.
   sample test; direct sample CLI probe; full serial `fvm dart test -j 1`.
   The direct `samples/unused_source_file` run still shows the known
   package-config-related extra finding already tracked by item 3.
+- 2026-07-09: Completed item 2. Limited duplicate suppression in
+  `unused_function` to private unreferenced type declarations that
+  `unused_class` actually reports, so members of private non-type
+  `extension` declarations now produce `unused_function` diagnostics.
+  Updated the focused regression test and sample expectations for the
+  existing private extension member examples.
+- Validation: `fvm dart analyze`; focused extension-member test; all
+  unused-function tests; `test/samples_test.dart`; direct CLI sample runs for
+  `samples/unused_class` and `samples/all_rules`; full serial
+  `fvm dart test -j 1 --reporter=expanded`.
 
 ## Notes
 
-No production code was changed as part of this review document. The branch is
-intended to capture the audit findings so follow-up implementation work can be
-tracked cleanly.
+This review document now tracks both the original audit findings and the
+implementation progress for follow-up fixes on this branch.

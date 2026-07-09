@@ -17,11 +17,9 @@ part of '../unused_function_rule.dart';
 /// name and would otherwise need to be referred to, the `on`-type's
 /// begin [Token] is used as a fallback.
 ///
-/// To stay consistent with `unused_class`, the rule's dispatch site
-/// additionally skips a member candidate when its enclosing extension
-/// element is itself a private declaration absent from the global
-/// reference index — re-flagging every member of an unused private
-/// extension would just repeat the report.
+/// Non-type extensions are not reported by `unused_class`, so private
+/// extension members remain candidates even when the enclosing extension
+/// is otherwise unreferenced.
 class _ExtensionMemberCollector implements _UnusedFunctionCandidateCollector {
   const _ExtensionMemberCollector();
 

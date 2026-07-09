@@ -72,13 +72,16 @@ const Map<String, List<(String, String)>> _expectedDiagnostics = {
     ('unused_function', 'lib/unused_function_sample.dart'),
     ('unused_function', 'lib/unused_function_sample.dart'),
   ],
-  // samples/unused_class: README documents exactly four unused_class
-  // diagnostics in lib/unused_class_sample.dart (P1..P4).
+  // samples/unused_class: README documents four unused_class diagnostics
+  // in lib/unused_class_sample.dart (P1..P4), plus one unused_function
+  // diagnostic for the unused member of the private non-type extension
+  // covered by the unused_class N9 case.
   'unused_class': [
     ('unused_class', 'lib/unused_class_sample.dart'),
     ('unused_class', 'lib/unused_class_sample.dart'),
     ('unused_class', 'lib/unused_class_sample.dart'),
     ('unused_class', 'lib/unused_class_sample.dart'),
+    ('unused_function', 'lib/unused_class_sample.dart'),
   ],
   // samples/unused_source_file: README documents a single unused_source_file
   // diagnostic pointing at lib/src/orphan.dart. The other lib/src files
@@ -94,10 +97,11 @@ const Map<String, List<(String, String)>> _expectedDiagnostics = {
   // unused_class/unused_function entry for orphan.dart) is the machine-checked
   // proof of that suppression.
   'unused_source_file': [('unused_source_file', 'lib/src/orphan.dart')],
-  // samples/all_rules: eleven diagnostics across all three built-in rules —
-  // six unused_function (P11 `unusedPublicTopLevel` in lib/src/internals.dart
-  // and the five private/local positives P1..P4 plus P9 in
-  // lib/unused_function_demo.dart), four unused_class (P1..P4 in
+  // samples/all_rules: twelve diagnostics across all three built-in rules —
+  // seven unused_function (P11 `unusedPublicTopLevel` in lib/src/internals.dart,
+  // the five private/local positives P1..P4 plus P9 in
+  // lib/unused_function_demo.dart, and the unused private extension member in
+  // lib/unused_class_demo.dart), four unused_class (P1..P4 in
   // lib/unused_class_demo.dart), and one unused_source_file (lib/src/orphan.dart).
   // lib/src/orphan.dart additionally declares a private function and a private
   // class; both would be flagged in a reachable file but are suppressed here
@@ -136,6 +140,7 @@ const Map<String, List<(String, String)>> _expectedDiagnostics = {
   // cases must NOT be flagged.
   'all_rules': [
     ('unused_function', 'lib/src/internals.dart'),
+    ('unused_function', 'lib/unused_class_demo.dart'),
     ('unused_function', 'lib/unused_function_demo.dart'),
     ('unused_function', 'lib/unused_function_demo.dart'),
     ('unused_function', 'lib/unused_function_demo.dart'),
