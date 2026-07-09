@@ -17,6 +17,26 @@
 - Kept public enum constructors eligible for `unused_function` diagnostics when
   no enum value invokes them.
 
+## [0.4.2](https://github.com/lezli01/lintforge/compare/v0.4.1...v0.4.2) (2026-07-09)
+
+
+### Features
+
+* **unused_class:** analyze across files ([dd3d45f](https://github.com/lezli01/lintforge/commit/dd3d45f62671e94666414632151dc719537d7c5a))
+
+
+### Bug Fixes
+
+* **cli:** reject unknown rule ids ([78516e5](https://github.com/lezli01/lintforge/commit/78516e5cb4d2895d0d06168b11550a08eba5b7dc))
+* **rules:** report private extension members ([dd18b3e](https://github.com/lezli01/lintforge/commit/dd18b3e04992b8d8e5ef106f0adef4215a6ca718))
+* **rules:** share generated file detection ([f323009](https://github.com/lezli01/lintforge/commit/f3230091b3e0bed630cf6ae3048a8dbe4c7a9941))
+* **runner:** match excludes from include roots ([b08af2b](https://github.com/lezli01/lintforge/commit/b08af2b313842a2ff1780fbc5b3529238a45c91a))
+* **samples:** make samples pure Dart ([cb0cba5](https://github.com/lezli01/lintforge/commit/cb0cba52d82c903ccbaa69965b59b06cedd70c7d))
+* **unused_function:** harden unused rule diagnostics ([#55](https://github.com/lezli01/lintforge/issues/55)) ([b92b0c1](https://github.com/lezli01/lintforge/commit/b92b0c1f4475df4fb161fd242d7e556c6b108863))
+* **unused_function:** narrow branch and nested diagnostics ([ff4ca9f](https://github.com/lezli01/lintforge/commit/ff4ca9f0236af9ff33550c74857f793927da3a0a))
+* **unused_function:** report unused enum constructors ([779ffec](https://github.com/lezli01/lintforge/commit/779ffec06afd9c63c73f93ea605f349e60a6ab48))
+* **unused-function:** exempt public constructors ([57cbd0e](https://github.com/lezli01/lintforge/commit/57cbd0e75d81cd264a6612e351d2ffce9b9ff6fb))
+
 ## [0.4.1](https://github.com/lezli01/lintforge/compare/v0.4.0...v0.4.1) (2026-07-08)
 
 
