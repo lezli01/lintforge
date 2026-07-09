@@ -41,7 +41,7 @@ The CLI registers:
 
 ```dart
 registry.registerMultiFile(UnusedFunctionRule());
-registry.register(UnusedClassRule());
+registry.registerMultiFile(UnusedClassRule());
 registry.registerMultiFile(UnusedSourceFileRule());
 ```
 

@@ -40,6 +40,7 @@ class _TopLevelAccessorCollector implements _UnusedFunctionCandidateCollector {
         kindLabel: declaration.isGetter
             ? 'top-level getter'
             : 'top-level setter',
+        isConditionalBranchApi: !declaration.name.lexeme.startsWith('_'),
       );
     }
   }

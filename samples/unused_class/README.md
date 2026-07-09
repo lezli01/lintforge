@@ -1,6 +1,6 @@
 # lintforge — `unused_class` sample
 
-This is a self-contained Dart/Flutter sample project that exercises the
+This is a self-contained Dart sample project that exercises the
 [`unused_class`](../../lib/src/rules/unused_class_rule.dart) rule shipped by
 the root [`lintforge`](../..) package. It is **not** published to pub.dev
 (`publish_to: 'none'`) and depends on `lintforge` via a relative path.
@@ -25,7 +25,7 @@ samples/unused_class/
 From the **repository root**:
 
 ```sh
-fvm flutter pub get -C samples/unused_class
+fvm dart pub get --directory samples/unused_class
 fvm dart run lintforge samples/unused_class/lib
 ```
 
@@ -38,8 +38,13 @@ fvm dart run lintforge --rules=unused_class samples/unused_class/lib
 
 ## Expected diagnostics
 
-Exactly **four** `unused_class` diagnostics are expected, one per positive
-case, all in `lib/unused_class_sample.dart`:
+A default all-rule run emits **five** diagnostics in
+`lib/unused_class_sample.dart`: the four `unused_class` positives below, plus
+one `unused_function` diagnostic for the unused private extension getter
+`_Ext.doubled`.
+
+When restricted to `--rules=unused_class`, exactly **four** diagnostics are
+expected, one per positive case:
 
 | Case | Declaration                              | Kind             |
 | ---- | ---------------------------------------- | ---------------- |
@@ -63,7 +68,7 @@ Each diagnostic carries the message
 | N6   | `_UsedAsAs` is referenced in an `as` cast (and as a return type).                  |
 | N7   | `_UsedStatic` is referenced via static-member access (`_UsedStatic.value`).        |
 | N8   | `class _Alias = _AliasBase with _AliasMixin;` — `ClassTypeAlias` is out of scope.  |
-| N9   | `extension _Ext on int {}` — non-type `extension` declarations are out of scope.   |
+| N9   | `extension _Ext on int {}` — the declaration itself is out of scope for `unused_class`; its unused getter is reported by `unused_function` in all-rule runs. |
 | N10  | `@pragma('vm:entry-point')` annotated `_EntryClass` is exempted by the rule.       |
 | N11  | `_UsedInObjectPattern` is referenced only through a Dart 3 `case _UsedInObjectPattern()` object pattern. |
 | N12  | `_UsedInRecord` is referenced only inside the record type annotation `(_UsedInRecord, int)`. |

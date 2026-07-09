@@ -1,7 +1,7 @@
 import 'dart:io';
 
-import 'package:lintforge/src/analysis_context.dart';
 import 'package:lintforge/src/diagnostic.dart';
+import 'package:lintforge/src/multi_file_analysis_context.dart';
 import 'package:lintforge/src/rules/unused_class_rule.dart';
 import 'package:lintforge/src/severity.dart';
 import 'package:analyzer/dart/analysis/analysis_context_collection.dart';
@@ -23,23 +23,56 @@ void main() {
       }
     });
 
+    Future<List<Diagnostic>> runRuleFiles(
+      Map<String, String> files, {
+      Set<String>? reportableFiles,
+    }) async {
+      final filePaths = <String>[];
+      for (final MapEntry(key: relativePath, value: content) in files.entries) {
+        final file = File(p.joinAll([tempDir.path, ...p.split(relativePath)]));
+        file.parent.createSync(recursive: true);
+        file.writeAsStringSync(content);
+        filePaths.add(p.normalize(p.absolute(file.path)));
+      }
+
+      final collection = AnalysisContextCollection(
+        includedPaths: filePaths,
+        sdkPath: _resolveSdkPath(),
+      );
+      final resolvedUnits = <ResolvedUnitResult>[];
+      for (final filePath in filePaths) {
+        final session = collection.contextFor(filePath).currentSession;
+        final result = await session.getResolvedUnit(filePath);
+        expect(result, isA<ResolvedUnitResult>());
+        resolvedUnits.add(result as ResolvedUnitResult);
+      }
+
+      final analyzedFilePaths = <String>{
+        for (final unit in resolvedUnits) unit.path,
+      };
+      final reportableFilePaths = reportableFiles == null
+          ? analyzedFilePaths
+          : <String>{
+              for (final relativePath in reportableFiles)
+                p.normalize(
+                  p.absolute(
+                    p.joinAll([tempDir.path, ...p.split(relativePath)]),
+                  ),
+                ),
+            };
+      final context = MultiFileAnalysisContext(
+        units: resolvedUnits,
+        analyzedFilePaths: analyzedFilePaths,
+        reportableFilePaths: reportableFilePaths,
+      );
+      return const UnusedClassRule().analyze(context).toList();
+    }
+
     Future<List<Diagnostic>> runRule(
       String content, {
       String fileName = 'fixture.dart',
-    }) async {
-      final fixture = File(p.join(tempDir.path, fileName));
-      fixture.writeAsStringSync(content);
-      final filePath = p.normalize(p.absolute(fixture.path));
-      final collection = AnalysisContextCollection(
-        includedPaths: [filePath],
-        sdkPath: _resolveSdkPath(),
-      );
-      final session = collection.contextFor(filePath).currentSession;
-      final result = await session.getResolvedUnit(filePath);
-      expect(result, isA<ResolvedUnitResult>());
-      final resolved = result as ResolvedUnitResult;
-      final context = AnalysisContext(unit: resolved, filePath: filePath);
-      return const UnusedClassRule().analyze(context).toList();
+    }) {
+      return runRuleFiles({fileName: content});
     }
 
     test('reports unused top-level private class', () async {
@@ -168,7 +201,7 @@ void main() { _Foo.bar(); }
       expect(diagnostics, isEmpty);
     });
 
-    test('skips files in libraries that have parts', () async {
+    test('skips part libraries when not all fragments are analyzed', () async {
       File(
         p.join(tempDir.path, 'fixture_part.dart'),
       ).writeAsStringSync("part of 'fixture.dart';\n");
@@ -177,6 +210,32 @@ void main() { _Foo.bar(); }
       );
       expect(diagnostics, isEmpty);
     });
+
+    test('counts references from sibling part files as uses', () async {
+      final diagnostics = await runRuleFiles({
+        'fixture.dart': "part 'fixture_part.dart';\nclass _Foo {}\n",
+        'fixture_part.dart':
+            "part of 'fixture.dart';\nvoid main() { _Foo(); }\n",
+      });
+
+      expect(diagnostics, isEmpty);
+    });
+
+    test(
+      'reports unused private declarations in complete part libraries',
+      () async {
+        final diagnostics = await runRuleFiles({
+          'fixture.dart': "part 'fixture_part.dart';\nvoid main() {}\n",
+          'fixture_part.dart': "part of 'fixture.dart';\nclass _Foo {}\n",
+        });
+
+        expect(diagnostics, hasLength(1));
+        final diagnostic = diagnostics.single;
+        expect(diagnostic.ruleId, 'unused_class');
+        expect(diagnostic.message, contains('_Foo'));
+        expect(diagnostic.location.filePath, endsWith('fixture_part.dart'));
+      },
+    );
 
     test('skips classes annotated with @pragma(vm:entry-point)', () async {
       final diagnostics = await runRule(

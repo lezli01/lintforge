@@ -128,6 +128,10 @@ class _ClassMemberCollector implements _UnusedFunctionCandidateCollector {
       nameToken: declaration.name,
       element: _declaredElement(element),
       kindLabel: _kindLabelFor(declaration),
+      isConditionalBranchApi: _isPublicMemberOfPublicType(
+        declaration.name.lexeme,
+        enclosingTypeName,
+      ),
     );
   }
 
@@ -162,7 +166,14 @@ bool _isPublicMemberOfPublicTypeOutsideLibSrc(
   String enclosingTypeName,
   String filePath,
 ) {
+  if (!_isPublicMemberOfPublicType(memberName, enclosingTypeName)) {
+    return false;
+  }
+  return !_isTopLevelCandidateName(memberName, filePath);
+}
+
+bool _isPublicMemberOfPublicType(String memberName, String enclosingTypeName) {
   if (memberName.startsWith('_')) return false;
   if (enclosingTypeName.startsWith('_')) return false;
-  return !_isTopLevelCandidateName(memberName, filePath);
+  return true;
 }

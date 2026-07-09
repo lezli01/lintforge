@@ -116,20 +116,16 @@ void main() {}
       expect(diagnostic.message, contains('extension getter'));
     });
 
-    test(
-      'does not additionally flag members of an unused private extension',
-      () async {
-        final diagnostics = await runRule('''
+    test('flags members of an unused private extension', () async {
+      final diagnostics = await runRule('''
 extension _Priv on String {
   void hello() {}
 }
 void main() {}
 ''');
-        for (final diagnostic in diagnostics) {
-          expect(diagnostic.message, isNot(contains('extension')));
-        }
-      },
-    );
+      expect(diagnostics, hasLength(1));
+      expect(diagnostics.single.message, contains('extension method "hello"'));
+    });
   });
 }
 

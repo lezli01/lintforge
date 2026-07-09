@@ -1,13 +1,13 @@
 # `unused_class`
 
 `unused_class` flags private class-like declarations that are never referenced
-inside the same compilation unit.
+anywhere in their complete analyzed library.
 
 | Field | Value |
 | ----- | ----- |
 | Rule id | `unused_class` |
 | Default severity | `warning` |
-| Dispatch | single-file |
+| Dispatch | multi-file |
 
 ## What it reports
 
@@ -32,7 +32,7 @@ Remove "<name>" or reference it.
 
 ## What counts as a use
 
-Any resolved reference to the declaration in the same unit counts, including:
+Any resolved reference to the declaration in the analyzed set counts, including:
 
 - type annotations
 - constructor invocations
@@ -41,6 +41,7 @@ Any resolved reference to the declaration in the same unit counts, including:
 - `as` casts
 - static member access
 - enum value access
+- sibling `part` files
 - object patterns
 - record type annotations
 - sealed-supertype switch patterns through referenced subtypes
@@ -54,12 +55,14 @@ The rule deliberately skips:
 - non-type extension declarations (`extension _Ext on T`)
 - declarations annotated with `@pragma('vm:entry-point')`
 - any unit that imports `dart:mirrors`
-- libraries with part files
+- libraries with part files when one or more resolved fragments are missing
+  from the analyzed set
 - declarations inside files already reported by `unused_source_file`
 
-Because the rule is single-file, references from sibling files do not make a
-private declaration count as used. That matches Dart privacy: `_PrivateName` is
-library-private, and a single-file library is the common case this rule targets.
+Because Dart private names are library-private, the rule only treats references
+inside the same library as uses. For libraries split with `part`, all resolved
+fragments must be present in the analyzed set; otherwise the library is skipped
+to avoid false positives from a missing sibling part.
 
 ## Examples
 

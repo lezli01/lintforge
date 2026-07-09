@@ -85,8 +85,8 @@ Run two rules:
 lintforge --rules unused_class,unused_source_file
 ```
 
-Unknown ids simply select no matching rule; use `--list-rules` to inspect the
-available ids.
+Unknown ids fail with exit code `64` and usage output; use `--list-rules` to
+inspect the available ids.
 
 ## Color and progress
 
@@ -130,7 +130,7 @@ No issues found
 | ---- | ------- |
 | `0` | The run completed and emitted no `Severity.error` diagnostics. Warning-only runs exit `0`. |
 | `1` | At least one diagnostic had `Severity.error`. |
-| `64` | Command-line parsing failed. |
+| `64` | Command-line parsing failed, or `--rules` named an unknown rule id. |
 
 The current built-in rules emit warnings, so they do not fail the process by
 severity. Custom rule runners can emit `Severity.error` diagnostics through the

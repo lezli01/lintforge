@@ -3,19 +3,20 @@ import 'package:analyzer/dart/ast/token.dart';
 import 'package:analyzer/dart/ast/visitor.dart';
 import 'package:analyzer/dart/element/element.dart';
 import 'package:analyzer/source/line_info.dart';
+import 'package:path/path.dart' as p;
 
-import '../analysis_context.dart';
-import '../analyzer_rule.dart';
 import '../diagnostic.dart';
+import '../multi_file_analysis_context.dart';
+import '../multi_file_analyzer_rule.dart';
 import '../severity.dart';
 import '../source_location.dart';
 
-/// Flags file-local class, mixin, enum, and extension-type declarations that
-/// are never referenced.
+/// Flags private class, mixin, enum, and extension-type declarations that are
+/// never referenced across the analyzed file set.
 ///
-/// The rule is intentionally file-local: per the frame's dispatch model, a
-/// rule sees one resolved compilation unit at a time and cannot reason about
-/// references in sibling files. Four kinds of top-level declarations are
+/// The rule inspects every resolved compilation unit in the analyzed set, so
+/// private declarations in a library with `part` files can be kept alive by
+/// references from sibling parts. Four kinds of top-level declarations are
 /// inspected:
 ///
 /// * `ClassDeclaration` — covers `class`, `abstract class`, and `base`,
@@ -25,13 +26,13 @@ import '../source_location.dart';
 /// * `EnumDeclaration`.
 /// * `ExtensionTypeDeclaration`.
 ///
-/// Only **private** declarations (identifier begins with `_`) are
-/// candidates, and only when the enclosing library has no `part` files,
-/// because otherwise a sibling part could legitimately reference the
-/// declaration.
+/// Only **private** declarations (identifier begins with `_`) are candidates.
+/// Libraries with `part` files are analyzed only when every resolved fragment
+/// of that library is present in the analyzed set; otherwise the rule skips
+/// the library rather than risk a false positive from a missing sibling part.
 ///
 /// A declaration is considered "used" if any `SimpleIdentifier` in the
-/// compilation unit resolves (via `element`) to its declared element, or
+/// analyzed set resolves (via `element`) to its declared element, or
 /// if any `NamedType` does — the latter covers the class-modifier forms
 /// (`sealed`, `base`, `interface`, `final`), mixin types in `with`,
 /// `implements`, and `on` clauses, generic type arguments, and the type
@@ -49,11 +50,11 @@ import '../source_location.dart';
 /// * `extension` declarations (non-type `ExtensionDeclaration`) — out of
 ///   scope for the first cut;
 /// * declarations annotated with `@pragma('vm:entry-point')`;
-/// * every candidate in a compilation unit that imports `dart:mirrors`,
+/// * every candidate in a library that imports `dart:mirrors`,
 ///   because reflective lookup may resolve a class by name at runtime
 ///   without ever naming it statically — flagging would produce false
 ///   positives.
-class UnusedClassRule implements AnalyzerRule {
+class UnusedClassRule implements MultiFileAnalyzerRule {
   /// Creates an instance of the rule. Stateless and `const`-constructible.
   const UnusedClassRule();
 
@@ -62,57 +63,62 @@ class UnusedClassRule implements AnalyzerRule {
 
   @override
   String get description =>
-      'Flags file-local class, mixin, enum, and extension-type declarations '
-      'that are never referenced.';
+      'Flags private class, mixin, enum, and extension-type declarations '
+      'that are never referenced across the analyzed file set.';
 
   @override
   Severity get defaultSeverity => Severity.warning;
 
   @override
-  Iterable<Diagnostic> analyze(AnalysisContext context) {
-    final compilationUnit = context.unit.unit;
-    final libraryElement = context.unit.libraryElement;
-    final lineInfo = context.unit.lineInfo;
-    final filePath = context.filePath;
-
-    if (libraryElement.fragments.length > 1) {
-      return const <Diagnostic>[];
-    }
-
-    if (_importsDartMirrors(compilationUnit)) {
-      return const <Diagnostic>[];
-    }
-
-    final candidates = <_Candidate>[];
-    for (final declaration in compilationUnit.declarations) {
-      final candidate = _candidateFor(declaration);
-      if (candidate != null) {
-        candidates.add(candidate);
+  Iterable<Diagnostic> analyze(MultiFileAnalysisContext context) {
+    final globalReferences = <Element>{};
+    final mirrorLibraries = <LibraryElement>{};
+    for (final unit in context.units) {
+      unit.unit.accept(_ReferenceCollector(globalReferences));
+      if (_importsDartMirrors(unit.unit)) {
+        mirrorLibraries.add(unit.libraryElement);
       }
     }
 
-    if (candidates.isEmpty) {
-      return const <Diagnostic>[];
-    }
-
-    final unitReferences = <Element>{};
-    compilationUnit.accept(_ReferenceCollector(unitReferences));
-
     final diagnostics = <Diagnostic>[];
-    for (final candidate in candidates) {
-      final element = candidate.element;
-      if (element == null) continue;
-      if (unitReferences.contains(element)) continue;
-      diagnostics.add(
-        _buildDiagnostic(
-          candidate: candidate,
-          filePath: filePath,
-          lineInfo: lineInfo,
-        ),
-      );
+    for (final unit in context.units) {
+      if (!context.reportableFilePaths.contains(unit.path)) continue;
+
+      final libraryElement = unit.libraryElement;
+      if (mirrorLibraries.contains(libraryElement)) continue;
+      if (!_libraryFragmentsAreAnalyzed(
+        libraryElement,
+        context.analyzedFilePaths,
+      )) {
+        continue;
+      }
+
+      final candidates = <_Candidate>[];
+      for (final declaration in unit.unit.declarations) {
+        final candidate = _candidateFor(declaration);
+        if (candidate != null) {
+          candidates.add(candidate);
+        }
+      }
+      if (candidates.isEmpty) continue;
+
+      for (final candidate in candidates) {
+        final element = candidate.element?.baseElement;
+        if (element == null) continue;
+        if (globalReferences.contains(element)) continue;
+        diagnostics.add(
+          _buildDiagnostic(
+            candidate: candidate,
+            filePath: unit.path,
+            lineInfo: unit.lineInfo,
+          ),
+        );
+      }
     }
 
     diagnostics.sort((a, b) {
+      final byPath = a.location.filePath.compareTo(b.location.filePath);
+      if (byPath != 0) return byPath;
       final byLine = a.location.line.compareTo(b.location.line);
       if (byLine != 0) return byLine;
       return a.location.column.compareTo(b.location.column);
@@ -199,6 +205,19 @@ class UnusedClassRule implements AnalyzerRule {
   }
 }
 
+bool _libraryFragmentsAreAnalyzed(
+  LibraryElement libraryElement,
+  Set<String> analyzedFilePaths,
+) {
+  for (final fragment in libraryElement.fragments) {
+    if (fragment.isOriginNotExistingFile) return false;
+    if (!analyzedFilePaths.contains(p.normalize(fragment.source.fullName))) {
+      return false;
+    }
+  }
+  return true;
+}
+
 bool _importsDartMirrors(CompilationUnit unit) {
   for (final directive in unit.directives) {
     if (directive is! ImportDirective) continue;
@@ -246,14 +265,14 @@ class _ReferenceCollector extends RecursiveAstVisitor<void> {
   @override
   void visitSimpleIdentifier(SimpleIdentifier node) {
     final element = node.element;
-    if (element != null) sink.add(element);
+    if (element != null) sink.add(element.baseElement);
     super.visitSimpleIdentifier(node);
   }
 
   @override
   void visitNamedType(NamedType node) {
     final element = node.element;
-    if (element != null) sink.add(element);
+    if (element != null) sink.add(element.baseElement);
     super.visitNamedType(node);
   }
 
@@ -269,7 +288,7 @@ class _ReferenceCollector extends RecursiveAstVisitor<void> {
   @override
   void visitObjectPattern(ObjectPattern node) {
     final element = node.type.element;
-    if (element != null) sink.add(element);
+    if (element != null) sink.add(element.baseElement);
     super.visitObjectPattern(node);
   }
 }

@@ -1,6 +1,6 @@
 # `all_rules` sample
 
-A self-contained Dart/Flutter package that exercises **every** built-in rule
+A self-contained Dart package that exercises **every** built-in rule
 shipped by the [`lintforge`](../..) package in a single project, with the same
 breadth of positive and negative cases that each per-rule sample covers.
 
@@ -50,7 +50,7 @@ samples/all_rules/
                                      # the non-selected branch on the VM, its
                                      # public function/class members are also
                                      # exempt from unused_function as
-                                     # conditional-export branch targets (N21)
+                                     # conditional-export branch surface (N21)
       framework_overrides.dart       # `LifecycleHost.toString` overrides an
                                      # out-of-set (`dart:core`) supertype member
                                      # WITHOUT an `@override` annotation — exempt
@@ -99,35 +99,50 @@ reference and reachability graphs. See `unused_function` N20 and the
 
 ## Expected output
 
-Exactly **18** diagnostics — 13 `unused_function`, 4 `unused_class`, and 1
+Exactly **12** diagnostics — 7 `unused_function`, 4 `unused_class`, and 1
 `unused_source_file` — and nothing else:
 
 ```
-samples/all_rules/lib/src/internals.dart:15:6 • [warning] unused_function: The top-level function "unusedPublicTopLevel" is declared but never used.
-samples/all_rules/lib/src/orphan.dart:1:1 • [warning] unused_source_file: The source file "samples/all_rules/lib/src/orphan.dart" is never imported, exported, or used as a part.
-samples/all_rules/lib/unused_class_demo.dart:15:7 • [warning] unused_class: The class "_Foo" is declared but never used.
-samples/all_rules/lib/unused_class_demo.dart:18:7 • [warning] unused_class: The mixin "_Bar" is declared but never used.
-samples/all_rules/lib/unused_class_demo.dart:21:6 • [warning] unused_class: The enum "_Baz" is declared but never used.
-samples/all_rules/lib/unused_class_demo.dart:24:16 • [warning] unused_class: The extension type "_Qux" is declared but never used.
-samples/all_rules/lib/unused_function_demo.dart:29:6 • [warning] unused_function: The top-level function "_unusedPrivateTopLevel" is declared but never used.
-samples/all_rules/lib/unused_function_demo.dart:32:9 • [warning] unused_function: The top-level getter "_unusedTopLevelGetter" is declared but never used.
-samples/all_rules/lib/unused_function_demo.dart:35:5 • [warning] unused_function: The top-level setter "_unusedTopLevelSetter" is declared but never used.
-samples/all_rules/lib/unused_function_demo.dart:218:8 • [warning] unused_function: The method "_unusedPrivateMethod" is declared but never used.
-samples/all_rules/lib/unused_function_demo.dart:221:15 • [warning] unused_function: The static method "unusedStaticMethod" is declared but never used.
-samples/all_rules/lib/unused_function_demo.dart:224:11 • [warning] unused_function: The getter "unusedGetter" is declared but never used.
-samples/all_rules/lib/unused_function_demo.dart:227:7 • [warning] unused_function: The setter "unusedSetter" is declared but never used.
-samples/all_rules/lib/unused_function_demo.dart:230:20 • [warning] unused_function: The operator "-" is declared but never used.
-samples/all_rules/lib/unused_function_demo.dart:237:10 • [warning] unused_function: The local function "unusedLocal" is declared but never used.
-samples/all_rules/lib/unused_function_demo.dart:291:10 • [warning] unused_function: The extension method "unusedExtension" is declared but never used.
-samples/all_rules/lib/unused_function_demo.dart:347:8 • [warning] unused_function: The method "overrideButUnreachable" is declared but never used.
-samples/all_rules/lib/unused_function_demo.dart:368:7 • [warning] unused_function: The method "foo" is declared but never used.
+samples/all_rules/lib/unused_class_demo.dart
+  warning  15:7    unused_class        The class "_Foo" is declared but never used.
+                                       ↳ Remove "_Foo" or reference it.
+  warning  18:7    unused_class        The mixin "_Bar" is declared but never used.
+                                       ↳ Remove "_Bar" or reference it.
+  warning  21:6    unused_class        The enum "_Baz" is declared but never used.
+                                       ↳ Remove "_Baz" or reference it.
+  warning  24:16   unused_class        The extension type "_Qux" is declared but never used.
+                                       ↳ Remove "_Qux" or reference it.
+  warning  75:11   unused_function     The extension getter "doubled" is declared but never used.
+                                       ↳ Remove "doubled" or reference it.
+
+samples/all_rules/lib/src/internals.dart
+  warning  15:6    unused_function     The top-level function "unusedPublicTopLevel" is declared but never used.
+                                       ↳ Remove "unusedPublicTopLevel" or reference it.
+
+samples/all_rules/lib/unused_function_demo.dart
+  warning  30:6    unused_function     The top-level function "_unusedPrivateTopLevel" is declared but never used.
+                                       ↳ Remove "_unusedPrivateTopLevel" or reference it.
+  warning  33:9    unused_function     The top-level getter "_unusedTopLevelGetter" is declared but never used.
+                                       ↳ Remove "_unusedTopLevelGetter" or reference it.
+  warning  36:5    unused_function     The top-level setter "_unusedTopLevelSetter" is declared but never used.
+                                       ↳ Remove "_unusedTopLevelSetter" or reference it.
+  warning  228:8   unused_function     The method "_unusedPrivateMethod" is declared but never used.
+                                       ↳ Remove "_unusedPrivateMethod" or reference it.
+  warning  247:10  unused_function     The local function "unusedLocal" is declared but never used.
+                                       ↳ Remove "unusedLocal" or reference it.
+
+samples/all_rules/lib/src/orphan.dart
+  warning  1:1     unused_source_file  The source file "samples/all_rules/lib/src/orphan.dart" is never imported, exported, or used as a part.
+                                       ↳ Remove the file or reference it from an entry point.
+
+⚠ 12 issues found  (12 warnings)  in 4 files
 ```
 
 (Diagnostic ordering depends on the runner's file iteration; the set of
 `(file, ruleId)` pairs above is what's deterministic.)
 
-The `unused_function` `N21`–`N24` negative cases (conditional-export
-branch targets in `lib/src/web_impl.dart`, the annotation-free override
+The `unused_function` `N21`–`N24` negative cases (public conditional-export
+branch surface in `lib/src/web_impl.dart`, the annotation-free override
 exemption in `lib/src/framework_overrides.dart`, public members of a
 public type declared outside `lib/src/` in `lib/unused_function_demo.dart`,
 and freezed-annotated constructors in `lib/src/internals.dart`)
@@ -142,15 +157,9 @@ declaration they introduce is exempt.
 | `P2` | `lib/unused_function_demo.dart`   | `unused_function`    | `_unusedTopLevelGetter` — private top-level getter that is never read.                 |
 | `P3` | `lib/unused_function_demo.dart`   | `unused_function`    | `_unusedTopLevelSetter` — private top-level setter that is never written.              |
 | `P4` | `lib/unused_function_demo.dart`   | `unused_function`    | `Service._unusedPrivateMethod` — private instance method with no reference anywhere.   |
-| `P5` | `lib/unused_function_demo.dart`   | `unused_function`    | `Service.unusedStaticMethod` — static method with no reference anywhere.               |
-| `P6` | `lib/unused_function_demo.dart`   | `unused_function`    | `Service.unusedGetter` — instance getter that is never read.                           |
-| `P7` | `lib/unused_function_demo.dart`   | `unused_function`    | `Service.unusedSetter` — instance setter that is never written.                        |
-| `P8` | `lib/unused_function_demo.dart`   | `unused_function`    | `Service.operator -` — operator that is never invoked.                                 |
 | `P9` | `lib/unused_function_demo.dart`   | `unused_function`    | local `unusedLocal` inside `Service.usedMethod` — local function with no reference in its enclosing body. |
-| `P10`| `lib/unused_function_demo.dart`   | `unused_function`    | `StringX.unusedExtension` — method on a public extension that is never invoked.        |
 | `P11`| `lib/src/internals.dart`          | `unused_function`    | `unusedPublicTopLevel` — public top-level function in `lib/src/` (the package's internal surface) with no reference. |
-| `P12`| `lib/unused_function_demo.dart`   | `unused_function`    | `IsolatedSub.overrideButUnreachable` — `@override` whose inherited supertype member is in the analyzed set but itself unreferenced, so the override-of-reachable exemption does not apply. |
-| `P13`| `lib/unused_function_demo.dart`   | `unused_function`    | `NoSuchMethodTarget.foo` — concrete method on a class whose supertype chain does NOT declare `noSuchMethod`. Positive control for the `noSuchMethod` supertype walk. |
+| `P14`| `lib/unused_class_demo.dart`      | `unused_function`    | `_Ext.doubled` — member of a private non-type extension; the extension declaration itself is outside `unused_class`, so `unused_function` reports the unused member. |
 | `P1` | `lib/unused_class_demo.dart`      | `unused_class`       | `class _Foo {}` — unused private class.                                                |
 | `P2` | `lib/unused_class_demo.dart`      | `unused_class`       | `mixin _Bar {}` — unused private mixin.                                                |
 | `P3` | `lib/unused_class_demo.dart`      | `unused_class`       | `enum _Baz { a, b }` — unused private enum.                                            |
@@ -183,13 +192,13 @@ declaration they introduce is exempt.
 | `N18`| `Holder<int>.value(0)`                       | Factory constructor on a generic sealed class invoked with an explicit type argument resolves to a substituted view of the declared constructor; the same `baseElement` projection lets the declared factory match the call site. |
 | `N19`| `A.new` reached through `B`'s `super.x` forwarding (`class B extends A { const B({super.x}); }` plus `const B(x: 1)`) | Super-parameter forwarding (Dart 2.17+) produces no `SuperConstructorInvocation` AST node — the forwarding is expressed only through the `super.x` parameter. The rule reads the implicit super-constructor target off the constructor element and records it as a use, so `A`'s constructor must NOT be flagged. The same hook covers `class X extends Y {}` with a synthetic default constructor that implicitly invokes `Y.new`. |
 | `N20`| `keptAliveByExcludedRef` in `lib/src/internals.dart` is referenced only from the excluded `lib/src/refs.g.dart` (the runner is invoked with `--exclude '*.g.dart'`) | Excluded files are filtered out of the *reportable* set but still parsed by the frame, so their references flow into the cross-file rule's global reference set. The call in `refs.g.dart` keeps `keptAliveByExcludedRef` alive — without the excluded-files-as-references behavior, this public top-level function in `lib/src/` would be a P11-shaped positive. The excluded file's own private members (e.g. `_refUsage`) are likewise not flagged because the file is not in `reportableFilePaths`. |
-| `N21`| `platformLabelFn` / `WebPlatformService` members in `lib/src/web_impl.dart` — the non-selected (`dart.library.html`) branch of the conditional export in `lib/all_rules_sample.dart` | A conditional export resolves to exactly one branch at analysis time (mobile on the VM), so members of the non-selected branch are reached only through the wrapper's export surface and look unreferenced. The rule collects every `if (...)` configuration branch URI across the analyzed set and skips every candidate declared in such a file. `web_impl.dart` sits under `lib/src/`, so the public-members-outside-`lib/src/` exemption does NOT apply; the conditional-export branch-target exemption is what keeps its members unflagged. |
+| `N21`| `platformLabelFn` / `WebPlatformService` members in `lib/src/web_impl.dart` — the non-selected (`dart.library.html`) branch of the conditional export in `lib/all_rules_sample.dart` | A conditional export resolves to exactly one branch at analysis time (mobile on the VM), so public members of the non-selected branch are reached only through the wrapper's export surface and look unreferenced. The rule collects every `if (...)` configuration branch URI across the analyzed set and exempts public branch-surface candidates in those files. `web_impl.dart` sits under `lib/src/`, so the public-members-outside-`lib/src/` exemption does NOT apply; the conditional-export branch-target exemption is what keeps its public members unflagged. Private helpers in branch files remain candidates. |
 | `N22`| `LifecycleHost.toString` in `lib/src/framework_overrides.dart` | Overrides `Object.toString` — a supertype member declared in `dart:core`, outside the analyzed unit set — WITHOUT an `@override` annotation. A declaration that shadows a supertype member is an override whether or not it is annotated, and framework callbacks (Flutter's `State.createState`, lifecycle hooks) are routinely written without the annotation. When the inherited member is declared outside the analyzed set the rule cannot see its reference sites, so it conservatively treats the override as a use. The class is under `lib/src/`, isolating the override exemption as the sole reason the method survives. |
-| `N23`| every public member of `PublicSurface` and the public getter on `PublicChannel` (both declared in `lib/unused_function_demo.dart`, directly under `lib/`) | Public instance/static methods, getters, setters, and operators on a public class — and public members of a public enum — declared OUTSIDE a `lib/src/` directory form the package's consumable, test-exercised API surface. "No references found in the analyzed set" cannot prove such a member unused, so the rule skips a candidate when both the member name and its enclosing type name are public and the declaring file is not under `lib/src/`, mirroring the existing public-top-level exemption. Private members, and members of private types, remain flagged. |
+| `N23`| public members on public types in `lib/unused_function_demo.dart`, including `Service`, `StringX`, `IsolatedSub`, `NoSuchMethodTarget`, `PublicSurface`, and `PublicChannel` | Public instance/static methods, getters, setters, operators, and extension members on a public type declared OUTSIDE a `lib/src/` directory form the package's consumable, test-exercised API surface. "No references found in the analyzed set" cannot prove such a member unused, so the rule skips a candidate when both the member name and its enclosing type name are public and the declaring file is not under `lib/src/`, mirroring the existing public-top-level exemption. Private members, and members of private types, remain flagged. |
 | `N24`| Every constructor of `FreezedSample` (`@freezed` bare-identifier form) in `lib/src/internals.dart` | `package:freezed`'s code generator emits boilerplate constructors — a private generative `Foo._()`, an unnamed factory forwarding to a generated `_$Foo`, and one named factory per union case — that are only invoked from generated `*.freezed.dart` part files. Consumers of `lintforge` typically run the rule before code generation has happened, so the source AST shows those constructors as unreferenced. The rule recognises `@freezed`, `@Freezed(...)`, `@unfreezed`, `@Unfreezed(...)`, and `@FreezedUnion(...)` annotations on the enclosing class and skips every constructor candidate. The sample declares a stub `freezed` identifier locally so it does not need to pull in `package:freezed_annotation` (and `build_runner`); the constructor-invocation form (`@Freezed()`) is covered by the rule's unit tests rather than here. |
 
-Each positive case has a used twin that exercises the negative path for the
-same kind:
+Several function cases have a used twin that exercises the negative path for
+the same kind:
 
 - `_usedPrivate` (top-level function) — called and torn off from `main`.
 - `_usedTopLevelGetter` / `_usedTopLevelSetter` — read / written from `main`.
@@ -212,7 +221,7 @@ same kind:
 | `N6` | `_UsedAsAs` is referenced in an `as` cast (and as a return type).                  |
 | `N7` | `_UsedStatic` is referenced via static-member access (`_UsedStatic.value`).        |
 | `N8` | `class _Alias = _AliasBase with _AliasMixin;` — `ClassTypeAlias` is out of scope.  |
-| `N9` | `extension _Ext on int {}` — non-type `extension` declarations are out of scope.   |
+| `N9` | `extension _Ext on int {}` — the declaration itself is out of scope for `unused_class`; its unused getter is reported by `unused_function`. |
 | `N10`| `@pragma('vm:entry-point')` annotated `_EntryClass` is exempted by the rule.       |
 | `N11`| `_UsedInObjectPattern` is referenced only through a Dart 3 `case _UsedInObjectPattern()` object pattern. |
 | `N12`| `_UsedInRecord` is referenced only inside the record type annotation `(_UsedInRecord, int)`. |

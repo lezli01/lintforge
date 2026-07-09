@@ -24,8 +24,8 @@ import 'src/mirrors_user.dart';
 // (N22) Importing the conditional-export wrapper keeps it — and both of
 // the platform branch files it names in `if (...)` configurations —
 // reachable for `unused_source_file`. Nothing here references a symbol
-// from the wrapper; the branch files' members are exempt from
-// `unused_function` purely as conditional-export branch targets.
+// from the wrapper; the branch files' public members are exempt from
+// `unused_function` as conditional-export branch surface.
 import 'src/platform_export.dart';
 
 // === POSITIVE CASES (MUST trigger unused_function) ===
@@ -146,10 +146,10 @@ void main() {
   // ignore: unused_local_variable
   final lifecycle = LifecycleHost();
 
-  // (P12) `IsolatedSub` is instantiated so it is not flagged by
-  // `unused_class`; its `@override` of `IsolatedBase.overrideButUnreachable`
-  // is never called, and the supertype member is itself unreferenced,
-  // so the override below stays flagged.
+  // (N24) `IsolatedSub` is instantiated so `unused_class` stays quiet.
+  // Its override is public on a public type declared outside `lib/src`,
+  // making it package API surface even though the in-repo supertype
+  // member remains deliberately unreferenced.
   // ignore: unused_local_variable
   final isolated = IsolatedSub();
 
@@ -231,16 +231,16 @@ class Service {
   // (P4) Unused private method.
   void _unusedPrivateMethod() {}
 
-  // (P5) Unused static method.
+  // (N24) Public static method; exempt as package API surface.
   static void unusedStaticMethod() {}
 
-  // (P6) Unused getter.
+  // (N24) Public getter; exempt as package API surface.
   int get unusedGetter => 0;
 
-  // (P7) Unused setter.
+  // (N24) Public setter; exempt as package API surface.
   set unusedSetter(int value) {}
 
-  // (P8) Unused operator.
+  // (N24) Public operator; exempt as package API surface.
   Service operator -(Service other) => this;
 
   // Used method twin — referenced from `main`. Also home to the local
@@ -298,9 +298,8 @@ class NoSuchMethodHolder {
   dynamic noSuchMethod(Invocation invocation) => null;
 }
 
-// (P10) Unused method on a public extension. The extension itself has a
-// used twin so the negative side of the extension-member path is also
-// exercised.
+// (N24) Public extension method outside `lib/src`; exempt as package
+// API surface. The used twin still exercises the reference path.
 extension StringX on String {
   String unusedExtension() => this;
   String usedExtension() => this;
@@ -344,14 +343,13 @@ class Sub extends Base {
   void hook() {}
 }
 
-// (P12) `@override` targets an in-repo supertype member that is itself
-// unreferenced — so the override stays flagged. The supertype member
-// is declared `external` so the rule does not flag the supertype
-// (which would otherwise also be reported); the override below
-// remains a candidate and is flagged because its inherited element is
-// in the analyzed set but not in the global reference set. This
-// positive case guarantees the override-of-reachable exemption does
-// not silently widen to all `@override` members.
+// (N24) Public override on a public type outside `lib/src`; exempt as
+// package API surface. The supertype member is deliberately left
+// unreferenced so this case proves the public-surface exemption wins
+// even when the override-of-reachable-supertype exemption would not.
+// The external base member keeps the base declaration from becoming a
+// separate unused-function finding. This stays a silent negative case
+// rather than a duplicate report.
 class IsolatedBase {
   external void overrideButUnreachable();
 }
@@ -373,12 +371,12 @@ class IsolatedSub extends IsolatedBase {
 // Acts as the supertype surface that the `noSuchMethod`-walk samples
 // declare an `@override` for.
 class NoSuchMethodTarget {
-  // (P13) Concrete method that is never invoked. The supertype-walking
-  // exemption only fires on subclasses whose chain includes a
-  // `noSuchMethod` declaration — `NoSuchMethodTarget` itself has no
-  // such supertype, so its own unused member is still flagged. Acts as
-  // the positive control that proves the walk does not silently spill
-  // into every public class.
+  // (N24) Public method on a public class outside `lib/src`; exempt as
+  // package API surface. The supertype-walking positive control now
+  // lives in focused unit tests; this sample keeps the class public to
+  // prove the public-surface exemption does not require references
+  // inside the analyzed set.
+  // No call to `foo` is needed here.
   int foo() => 0;
 }
 

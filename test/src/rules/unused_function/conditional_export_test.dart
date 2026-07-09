@@ -72,6 +72,34 @@ void main() {
       expect(diagnostics, isEmpty);
     });
 
+    test(
+      'reports private helpers in a conditional-export branch file',
+      () async {
+        final diagnostics = await runRule({
+          p.join('lib', 'src', 'payment_service.dart'):
+              "export 'payment_service_io.dart'\n"
+              "    if (dart.library.html) 'payment_service_web.dart';\n",
+          p.join('lib', 'src', 'payment_service_io.dart'):
+              'class PaymentService {}\n',
+          p.join('lib', 'src', 'payment_service_web.dart'):
+              'class PaymentService {\n'
+              '  void startMobileCheckout() {}\n'
+              '  void _clearCachedCheckout() {}\n'
+              '}\n'
+              '\n'
+              'void saveAttribution() {}\n'
+              'void _saveDebugAttribution() {}\n',
+        });
+
+        expect(diagnostics, hasLength(2));
+        final messages = diagnostics
+            .map((diagnostic) => diagnostic.message)
+            .join('\n');
+        expect(messages, contains('_clearCachedCheckout'));
+        expect(messages, contains('_saveDebugAttribution'));
+      },
+    );
+
     test('does not flag declarations in a conditional-import branch '
         'file', () async {
       final diagnostics = await runRule({

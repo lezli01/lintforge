@@ -6,7 +6,7 @@ LintForge currently ships three default-on rules. All built-in diagnostics use
 | Rule | Dispatch | Summary |
 | ---- | -------- | ------- |
 | [`unused_function`](unused-function.md) | multi-file | Flags unreferenced function-shaped declarations across the analyzed set. |
-| [`unused_class`](unused-class.md) | single-file | Flags private class-like declarations that are never referenced in their unit. |
+| [`unused_class`](unused-class.md) | multi-file | Flags private class-like declarations that are never referenced in their complete library. |
 | [`unused_source_file`](unused-source-file.md) | multi-file | Flags Dart files that are unreachable from package entry points. |
 
 List the rules installed in the CLI:

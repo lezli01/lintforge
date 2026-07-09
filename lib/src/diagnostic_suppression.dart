@@ -28,12 +28,12 @@ import 'rules/unused_source_file_rule.dart';
 ///
 /// The inner **class → member** tier is enforced earlier, inside
 /// [UnusedFunctionRule] itself (it skips a member candidate whose enclosing
-/// type is a private, unreferenced declaration that `unused_class` would
-/// flag), because deciding whether a member belongs to a flagged type needs
-/// the element model, not just the emitted [Diagnostic]s. This function
-/// only needs each diagnostic's [SourceLocation.filePath], which is enough
-/// for the file-level tier and keeps the runner decoupled from rule
-/// internals.
+/// class, mixin, enum, or extension type is a private, unreferenced
+/// declaration that `unused_class` would flag), because deciding whether a
+/// member belongs to a flagged type needs the element model, not just the
+/// emitted [Diagnostic]s. This function only needs each diagnostic's
+/// [SourceLocation.filePath], which is enough for the file-level tier and
+/// keeps the runner decoupled from rule internals.
 ///
 /// ### Behavior
 ///

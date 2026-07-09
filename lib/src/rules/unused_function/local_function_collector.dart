@@ -41,6 +41,7 @@ class _LocalFunctionVisitor extends RecursiveAstVisitor<void> {
             nameToken: declaration.name,
             element: _declaredElement(element),
             kindLabel: 'local function',
+            enclosingExecutableElements: _enclosingExecutableElements(node),
           ),
         );
       }
@@ -54,5 +55,27 @@ class _LocalFunctionVisitor extends RecursiveAstVisitor<void> {
     if (declaration.externalKeyword != null) return false;
     if (_hasVmEntryPointPragma(declaration.metadata)) return false;
     return true;
+  }
+
+  List<Element> _enclosingExecutableElements(
+    FunctionDeclarationStatement node,
+  ) {
+    final elements = <Element>[];
+    AstNode? current = node.parent;
+    while (current != null) {
+      Element? element;
+      if (current is FunctionDeclaration) {
+        element = current.declaredFragment?.element;
+      } else if (current is MethodDeclaration) {
+        element = current.declaredFragment?.element;
+      } else if (current is ConstructorDeclaration) {
+        element = current.declaredFragment?.element;
+      }
+      if (element != null) {
+        elements.add(_declaredElement(element));
+      }
+      current = current.parent;
+    }
+    return elements;
   }
 }

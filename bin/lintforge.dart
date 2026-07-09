@@ -36,6 +36,7 @@ Future<void> main(List<String> arguments) async {
 
   final preference = _preference(parsed.wasParsed('color') ? parsed : null);
   final stdoutAnsi = _resolveFor(preference, stdout);
+  final stderrAnsi = _resolveFor(preference, stderr);
 
   if (parsed['help'] as bool) {
     stdout.writeln(_usage(parser, stdoutAnsi));
@@ -52,11 +53,23 @@ Future<void> main(List<String> arguments) async {
     return;
   }
 
-  final options = _buildOptions(parsed);
   final registry = _buildRegistry();
+  final options = _buildOptions(parsed);
+  final unknownRuleIds = _unknownRuleIds(options.enabledRuleIds, registry);
+  if (unknownRuleIds.isNotEmpty) {
+    stderr.writeln(
+      stderrAnsi.paint(
+        _unknownRulesMessage(unknownRuleIds, registry),
+        const <int>[Ansi.red],
+      ),
+    );
+    stderr.writeln();
+    stderr.writeln(_usage(parser, stderrAnsi));
+    exitCode = 64;
+    return;
+  }
 
   final cwd = Directory.current.path;
-  final stderrAnsi = _resolveFor(preference, stderr);
   final progress = ProgressReporter(
     out: stderr,
     enabled: stderr.hasTerminal && stderr.supportsAnsiEscapes,
@@ -223,6 +236,35 @@ LintforgeOptions _buildOptions(ArgResults parsed) {
   );
 }
 
+List<String> _unknownRuleIds(
+  Set<String> requestedRuleIds,
+  RuleRegistry registry,
+) {
+  if (requestedRuleIds.isEmpty) return const <String>[];
+
+  final availableRuleIds = _availableRuleIds(registry);
+  return requestedRuleIds.where((id) => !availableRuleIds.contains(id)).toList()
+    ..sort();
+}
+
+Set<String> _availableRuleIds(RuleRegistry registry) {
+  return <String>{
+    for (final rule in registry.rules) rule.id,
+    for (final rule in registry.multiFileRules) rule.id,
+  };
+}
+
+String _unknownRulesMessage(
+  List<String> unknownRuleIds,
+  RuleRegistry registry,
+) {
+  final availableRuleIds = _availableRuleIds(registry).toList()..sort();
+  final noun = unknownRuleIds.length == 1 ? 'id' : 'ids';
+
+  return 'Unknown rule $noun: ${unknownRuleIds.join(', ')}.\n'
+      'Available rule ids: ${availableRuleIds.join(', ')}.';
+}
+
 String _usage(ArgParser parser, Ansi ansi) {
   final title = ansi.paint('LintForge', const <int>[Ansi.bold, Ansi.cyan]);
   return 'Usage: lintforge [options] [paths...]\n'
@@ -236,7 +278,7 @@ String _usage(ArgParser parser, Ansi ansi) {
 RuleRegistry _buildRegistry() {
   final registry = RuleRegistry();
   registry.registerMultiFile(UnusedFunctionRule());
-  registry.register(UnusedClassRule());
+  registry.registerMultiFile(UnusedClassRule());
   registry.registerMultiFile(UnusedSourceFileRule());
   return registry;
 }
@@ -255,7 +297,7 @@ void _printRuleListing(RuleRegistry registry, StringSink out, Ansi ansi) {
         severity: rule.defaultSeverity,
         description: rule.description,
       ),
-  ];
+  ]..sort((a, b) => a.id.compareTo(b.id));
 
   var idWidth = 0;
   for (final entry in entries) {

@@ -244,10 +244,10 @@ Per built-in rule:
   as reached, and a non-excluded file can reach an excluded one.
   Excluded files are never themselves reported as unused, regardless of
   whether anything in the analyzed set imports them.
-- **`unused_class`** — file-local. The rule only inspects references
-  within the same compilation unit, so excluded-files-as-references has
-  no effect beyond the standard "excluded files are never reported on"
-  guarantee.
+- **`unused_class`** — references in excluded files count as uses of
+  private class-like declarations in reportable files, including references
+  from excluded generated part files. Excluded files are still never reported
+  on directly.
 
 ## Built-In Rules
 
@@ -335,12 +335,13 @@ Deliberately not flagged:
   API surface, reachable by external consumers and exercised by tests, so
   "no references found in the analyzed set" cannot prove them unused.
   Private members, and members of private types, are still flagged;
-- declarations and members in the *non-selected* branch file of a
-  conditional export or import (`export 'stub.dart' if (dart.library.html)
-  'web.dart';`) — the analyzer resolves each directive to a single branch
-  per build target, but every `if (…)` configuration branch is a real
-  reference, so members reachable only through a non-selected branch are
-  exempt rather than flagged as dead;
+- public declarations and public members on public declarations in the
+  *non-selected* branch file of a conditional export or import
+  (`export 'stub.dart' if (dart.library.html) 'web.dart';`) — the analyzer
+  resolves each directive to a single branch per build target, but every
+  `if (…)` configuration branch is a real reference, so platform-facing branch
+  API is exempt rather than flagged as dead. Private helpers in branch files
+  are still flagged when unreferenced;
 - `external` declarations of any shape;
 - declarations annotated with `@pragma('vm:entry-point')`;
 - top-level functions, getters, and setters declared in a library that has
@@ -374,9 +375,12 @@ Deliberately not flagged:
 
 - **Id:** `unused_class`
 - **Default severity:** `warning`
+- **Dispatch:** multi-file (registered via `registerMultiFile`); the rule sees
+  every resolved compilation unit in the analyzed set on a single invocation
+  and resolves references across complete libraries.
 
-Flags file-local declarations whose names begin with `_` that are never
-referenced within the same compilation unit:
+Flags private declarations whose names begin with `_` that are never
+referenced anywhere in their complete analyzed library:
 
 - `class` declarations (including `abstract`, `base`, `final`, `sealed`,
   and `interface` modifiers);
@@ -386,8 +390,9 @@ referenced within the same compilation unit:
 
 Any reference to the declaration counts as a use, including type
 annotations, constructor invocations, `extends`/`implements`/`with`/`on`
-clauses, `is`/`as` checks, static-member access, enum-value access, and
-constructor or static tear-offs. The rule is Dart 3 feature-aware: it
+clauses, `is`/`as` checks, static-member access, enum-value access,
+constructor or static tear-offs, and references from sibling `part` files.
+The rule is Dart 3 feature-aware: it
 also follows Dart 3 object patterns (`case _Foo()` in a `switch`),
 record type annotations (`(_Foo, int)`), and exhaustive `switch` on a
 `sealed` supertype — so a private type referenced only through its
@@ -403,7 +408,8 @@ Deliberately not flagged in this release:
 - any private candidate declared in a library that imports
   `dart:mirrors` — reflection can name arbitrary types at runtime, so
   the rule conservatively skips the whole unit;
-- files belonging to libraries that have `part` files;
+- libraries with `part` files when one or more resolved fragments are missing
+  from the analyzed set;
 - types declared in a file `unused_source_file` reports as unreachable —
   the whole file is already flagged, so re-flagging each type inside it would
   just repeat the report (see [Rule interaction](#rule-interaction)).

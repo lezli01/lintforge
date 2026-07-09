@@ -11,6 +11,7 @@ import '../multi_file_analysis_context.dart';
 import '../multi_file_analyzer_rule.dart';
 import '../severity.dart';
 import '../source_location.dart';
+import 'generated_source.dart';
 
 part 'unused_function/class_member_collector.dart';
 part 'unused_function/constructor_collector.dart';
@@ -134,24 +135,23 @@ part 'unused_function/top_level_function_collector.dart';
 ///   skips every constructor candidate of such a class to avoid that
 ///   false-positive churn without requiring the generated parts to
 ///   be present.
-/// * **Units stamped with the generated-code marker
-///   `// ignore_for_file: type=lint`.** Build-time codegen tools —
+/// * **Generated units.** Build-time codegen tools —
 ///   most prominently Flutter's `gen_l10n` for `output-localization-file`
-///   output — stamp this line comment at the top of every file they
-///   emit to tell the SDK analyzer to suppress all lints on the
-///   generated code. The rule treats the marker as a "this file is
-///   generated, do not flag" signal and skips every candidate
-///   collector for the unit.
+///   output — stamp `// ignore_for_file: type=lint` at the top of every file
+///   they emit to tell the SDK analyzer to suppress all lints on the generated
+///   code. Other generators use conventional `*.g.dart` or `*.freezed.dart`
+///   basenames. The rule treats those signals as "this file is generated, do
+///   not flag" and skips every candidate collector for the unit.
 /// * **Conditional-export/import branch targets.** A conditional
 ///   directive (`export 'stub.dart' if (dart.library.html)
 ///   'x_web.dart';`) resolves to exactly one branch at analysis time,
-///   so declarations and members in the *non-selected* branch files are
-///   reached only through the wrapper library's public export surface
-///   and look unreferenced. The rule collects the file path of every
-///   configuration branch URI of any export/import directive across the
-///   analyzed unit set and skips every candidate declared in such a
-///   file — the whole file is treated as part of the platform export
-///   surface. See [_conditionalBranchTargetPaths].
+///   so public declarations and members in the *non-selected* branch
+///   files are reached only through the wrapper library's platform
+///   surface and look unreferenced. The rule collects the file path of
+///   every configuration branch URI of any export/import directive
+///   across the analyzed unit set and exempts only candidates that form
+///   that public branch surface. Private helpers inside branch files
+///   remain eligible for diagnostics. See [_conditionalBranchTargetPaths].
 ///
 /// **Features that flow through existing visitors with no extra
 /// handling.** The following language features do not need
@@ -219,11 +219,14 @@ class UnusedFunctionRule implements MultiFileAnalyzerRule {
 
     final conditionalBranchPaths = _conditionalBranchTargetPaths(context.units);
 
-    final diagnostics = <Diagnostic>[];
+    final pendingDiagnostics =
+        <({String filePath, LineInfo lineInfo, _Candidate candidate})>[];
     for (final unit in context.units) {
       if (!context.reportableFilePaths.contains(unit.path)) continue;
-      if (conditionalBranchPaths.contains(unit.path)) continue;
-      if (_unitIsGeneratedTypeLintIgnored(unit.unit)) continue;
+      if (isGeneratedSourceFile(unit.path, unit.unit)) continue;
+      final isConditionalBranchTarget = conditionalBranchPaths.contains(
+        unit.path,
+      );
       final skipMemberCandidates = _unitImportsDartMirrors(unit.unit);
       for (final collector in collectors) {
         if (skipMemberCandidates &&
@@ -231,22 +234,40 @@ class UnusedFunctionRule implements MultiFileAnalyzerRule {
           continue;
         }
         for (final candidate in collector.collect(unit, collectorContext)) {
+          if (isConditionalBranchTarget && candidate.isConditionalBranchApi) {
+            continue;
+          }
           if (globalReferences.contains(candidate.element)) continue;
-          if (_enclosingClassIsUnflaggedUnreferencedPrivate(
+          if (_enclosingTypeIsUnflaggedUnreferencedPrivate(
             candidate.element,
             globalReferences,
           )) {
             continue;
           }
-          diagnostics.add(
-            _buildDiagnostic(
-              candidate: candidate,
-              filePath: unit.path,
-              lineInfo: unit.lineInfo,
-            ),
-          );
+          pendingDiagnostics.add((
+            candidate: candidate,
+            filePath: unit.path,
+            lineInfo: unit.lineInfo,
+          ));
         }
       }
+    }
+
+    final reportedElements = <Element>{
+      for (final pending in pendingDiagnostics) pending.candidate.element,
+    };
+    final diagnostics = <Diagnostic>[];
+    for (final pending in pendingDiagnostics) {
+      if (_isNestedInReportedExecutable(pending.candidate, reportedElements)) {
+        continue;
+      }
+      diagnostics.add(
+        _buildDiagnostic(
+          candidate: pending.candidate,
+          filePath: pending.filePath,
+          lineInfo: pending.lineInfo,
+        ),
+      );
     }
 
     diagnostics.sort((a, b) {
@@ -260,21 +281,28 @@ class UnusedFunctionRule implements MultiFileAnalyzerRule {
     return diagnostics;
   }
 
-  bool _enclosingClassIsUnflaggedUnreferencedPrivate(
+  bool _enclosingTypeIsUnflaggedUnreferencedPrivate(
     Element element,
     Set<Element> globalReferences,
   ) {
     final enclosing = element.enclosingElement;
-    final String? name;
-    if (enclosing is InterfaceElement) {
-      name = enclosing.name;
-    } else if (enclosing is ExtensionElement) {
-      name = enclosing.name;
-    } else {
-      return false;
-    }
+    if (enclosing is! InterfaceElement) return false;
+    final name = enclosing.name;
     if (name == null || !name.startsWith('_')) return false;
     return !globalReferences.contains(enclosing);
+  }
+
+  bool _isNestedInReportedExecutable(
+    _Candidate candidate,
+    Set<Element> reportedElements,
+  ) {
+    if (candidate.kindLabel != 'local function') return false;
+    for (final enclosing in candidate.enclosingExecutableElements) {
+      if (reportedElements.contains(enclosing)) {
+        return true;
+      }
+    }
+    return false;
   }
 
   Diagnostic _buildDiagnostic({
@@ -353,9 +381,9 @@ bool _unitImportsDartMirrors(CompilationUnit unit) {
 /// Imports and Exports" — treat all candidate URIs as reachable), so
 /// this collects each [Configuration.resolvedUri] that resolves to a
 /// [DirectiveUriWithSource] and returns the full set of branch-target
-/// source paths. The dispatch site skips every candidate declared in one
-/// of these files, treating the whole file as part of the platform
-/// export surface.
+/// source paths. The dispatch site exempts public branch-surface
+/// candidates declared in these files while continuing to report private
+/// helpers that are not part of the platform-facing API.
 Set<String> _conditionalBranchTargetPaths(Iterable<ResolvedUnitResult> units) {
   final paths = <String>{};
   for (final unit in units) {
@@ -370,48 +398,6 @@ Set<String> _conditionalBranchTargetPaths(Iterable<ResolvedUnitResult> units) {
     }
   }
   return paths;
-}
-
-/// Whether [unit] is stamped with a generated-code marker at the top
-/// of the file: a `// ignore_for_file: …, type=lint, …` line comment
-/// preceding the file's first directive or declaration.
-///
-/// Build-time Dart codegen tools — most prominently Flutter's
-/// `gen_l10n` for the synthetic `L` base class and per-locale
-/// subclasses it emits under `output-localization-file` — stamp this
-/// marker into every file they emit to tell the SDK analyzer to
-/// suppress all lints on the generated code. The dispatch site treats
-/// the marker as a "this file is generated, do not flag" signal and
-/// skips every candidate collector for the unit: generated
-/// localization output is a translation surface keyed off ARB
-/// resources, and the rule has no business reporting any of its
-/// declarations as unused.
-bool _unitIsGeneratedTypeLintIgnored(CompilationUnit unit) {
-  CommentToken? comment = unit.beginToken.precedingComments;
-  while (comment != null) {
-    if (_isTypeLintIgnoreForFile(comment.lexeme)) return true;
-    comment = comment.next as CommentToken?;
-  }
-  return false;
-}
-
-/// Whether [lexeme] is a line comment of the form
-/// `// ignore_for_file: …, type=lint, …` — i.e. a Dart `ignore_for_file`
-/// directive whose comma-separated code list contains `type=lint`.
-///
-/// `flutter gen-l10n` emits exactly `// ignore_for_file: type=lint`, but
-/// any superset of codes (e.g. `// ignore_for_file: type=lint,
-/// unused_field`) still identifies the file as generated for the
-/// rule's purposes.
-bool _isTypeLintIgnoreForFile(String lexeme) {
-  if (!lexeme.startsWith('//')) return false;
-  final body = lexeme.substring(2).trim();
-  const prefix = 'ignore_for_file:';
-  if (!body.startsWith(prefix)) return false;
-  for (final code in body.substring(prefix.length).split(',')) {
-    if (code.trim() == 'type=lint') return true;
-  }
-  return false;
 }
 
 /// Whether [element] participates in a `noSuchMethod`-based dispatch
@@ -702,11 +688,15 @@ class _Candidate {
   final Token nameToken;
   final Element element;
   final String kindLabel;
+  final bool isConditionalBranchApi;
+  final List<Element> enclosingExecutableElements;
 
   const _Candidate({
     required this.nameToken,
     required this.element,
     required this.kindLabel,
+    this.isConditionalBranchApi = false,
+    this.enclosingExecutableElements = const <Element>[],
   });
 }
 
