@@ -106,7 +106,7 @@ const Map<String, List<(String, String)>> _expectedDiagnostics = {
   // lib/src/orphan.dart additionally declares a private function and a private
   // class; both would be flagged in a reachable file but are suppressed here
   // because unused_source_file already reports the whole file, so the count
-  // stays at eleven with NO unused_class/unused_function entry for orphan.dart.
+  // stays at twelve with NO unused_class/unused_function entry for orphan.dart.
   // As in samples/unused_function, the public-API positives P5..P8, P10, P12
   // and P13 are exempt because they sit on a public type declared outside
   // `lib/src/` (see the public-surface negative case below).

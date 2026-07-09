@@ -1,6 +1,6 @@
 # lintforge — `unused_class` sample
 
-This is a self-contained Dart/Flutter sample project that exercises the
+This is a self-contained Dart sample project that exercises the
 [`unused_class`](../../lib/src/rules/unused_class_rule.dart) rule shipped by
 the root [`lintforge`](../..) package. It is **not** published to pub.dev
 (`publish_to: 'none'`) and depends on `lintforge` via a relative path.
@@ -25,7 +25,7 @@ samples/unused_class/
 From the **repository root**:
 
 ```sh
-fvm flutter pub get -C samples/unused_class
+fvm dart pub get --directory samples/unused_class
 fvm dart run lintforge samples/unused_class/lib
 ```
 

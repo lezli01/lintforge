@@ -1,6 +1,6 @@
 # `all_rules` sample
 
-A self-contained Dart/Flutter package that exercises **every** built-in rule
+A self-contained Dart package that exercises **every** built-in rule
 shipped by the [`lintforge`](../..) package in a single project, with the same
 breadth of positive and negative cases that each per-rule sample covers.
 

@@ -72,7 +72,7 @@ followed identically to ordinary imports. `mobile_impl.dart` and
 From the repository root:
 
 ```sh
-fvm flutter pub get -C samples/unused_source_file
+fvm dart pub get --directory samples/unused_source_file
 fvm dart run lintforge --exclude '*.g.dart' samples/unused_source_file
 ```
 

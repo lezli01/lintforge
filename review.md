@@ -259,7 +259,7 @@ local function findings nested inside its body.
 
 1. Fix public constructor API exemption. **Status: done 2026-07-09.**
 2. Fix private extension silence. **Status: done 2026-07-09.**
-3. Make samples pure Dart and executable again.
+3. Make samples pure Dart and executable again. **Status: done 2026-07-09.**
 4. Fix test isolation or force serial test execution in CI.
 5. Share/generated-code detection across unused rules.
 6. Validate unknown `--rules` ids.
@@ -288,6 +288,18 @@ local function findings nested inside its body.
   unused-function tests; `test/samples_test.dart`; direct CLI sample runs for
   `samples/unused_class` and `samples/all_rules`; full serial
   `fvm dart test -j 1 --reporter=expanded`.
+- 2026-07-09: Completed item 3. Removed the Flutter SDK constraint and
+  dependency from all sample pubspecs, regenerated the sample lockfiles as
+  pure Dart package graphs, and updated sample READMEs to use
+  `fvm dart pub get --directory ...`.
+  Synchronized the `unused_function` sample documentation and comments with
+  the current public-API exemption behavior while preserving the expected
+  sample diagnostics.
+- Validation: `fvm dart pub get --directory` for all four sample packages;
+  `fvm dart analyze`; `fvm flutter test test/samples_test.dart
+  --reporter=expanded`; direct CLI probes for `samples/unused_function`,
+  `samples/unused_class`, `samples/unused_source_file`, and
+  `samples/all_rules` reported the expected 6, 5, 1, and 12 diagnostics.
 
 ## Notes
 
