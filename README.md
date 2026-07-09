@@ -23,6 +23,7 @@
 <p align="center">
   <a href="#why-lintforge">Why</a> &bull;
   <a href="#features">Features</a> &bull;
+  <a href="#documentation">Docs</a> &bull;
   <a href="#cli-usage">CLI</a> &bull;
   <a href="#built-in-rules">Rules</a> &bull;
   <a href="#custom-rules">Custom Rules</a> &bull;
@@ -100,6 +101,19 @@ dart pub global activate lintforge <version>
 > **Writing custom rules?** LintForge can also be consumed as a library so you
 > can register your own `AnalyzerRule` / `MultiFileAnalyzerRule` classes and run
 > them from a small entrypoint of your own — see [Custom Rules](#custom-rules).
+
+## Documentation
+
+The full tool documentation lives under [`doc/`](doc/). Start with the
+[`doc/` index](doc/README.md), or jump directly to:
+
+- [Getting started](doc/getting-started.md)
+- [CLI reference](doc/cli.md)
+- [Configuration](doc/configuration.md)
+- [Built-in rules](doc/rules/README.md)
+- [Custom rules](doc/custom-rules.md)
+- [Architecture](doc/architecture.md)
+- [Sample projects](doc/samples.md)
 
 ## CLI Usage
 
