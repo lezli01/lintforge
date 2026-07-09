@@ -281,6 +281,16 @@ void main() {
       expect(diagnostics, isEmpty);
     });
 
+    test('type=lint generated-file markers are skipped defensively', () async {
+      final diagnostics = await runRule({
+        p.join('lib', 'pkg.dart'): '// public surface\n',
+        p.join('lib', 'src', 'l10n.dart'):
+            '// ignore_for_file: type=lint\n'
+            "String message() => 'generated';\n",
+      });
+      expect(diagnostics, isEmpty);
+    });
+
     test(
       'follows every configuration of a conditional import regardless of the active platform',
       () async {

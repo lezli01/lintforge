@@ -8,6 +8,7 @@ import '../multi_file_analysis_context.dart';
 import '../multi_file_analyzer_rule.dart';
 import '../severity.dart';
 import '../source_location.dart';
+import 'generated_source.dart';
 
 /// Flags Dart source files that are never reached from any entry point in the
 /// analyzed set.
@@ -45,10 +46,11 @@ import '../source_location.dart';
 ///    unreachable, located at offset `0` / line `1` / column `1` of the file
 ///    so the message is anchored at the top of the source.
 ///
-/// Generated-file basenames (`*.g.dart`, `*.freezed.dart`) are skipped
-/// defensively even though the runner's default excludes already drop them,
-/// so consumers that disable those defaults still avoid noisy false
-/// positives on generated artifacts.
+/// Generated files are skipped defensively even though the runner's default
+/// excludes already drop common generator outputs, so consumers that disable
+/// those defaults still avoid noisy false positives on generated artifacts.
+/// This covers conventional generated-file basenames (`*.g.dart`,
+/// `*.freezed.dart`) and top-of-file `// ignore_for_file: type=lint` markers.
 ///
 /// Diagnostics are sorted by file path so reports are deterministic for a
 /// given input set.
@@ -110,7 +112,7 @@ class UnusedSourceFileRule implements MultiFileAnalyzerRule {
     final diagnostics = <Diagnostic>[];
     for (final path in context.reportableFilePaths) {
       if (entryPoints.contains(path)) continue;
-      if (_isGenerated(path)) continue;
+      if (isGeneratedSourceFile(path, unitsByPath[path]?.unit)) continue;
       if (reachable.contains(path)) continue;
       diagnostics.add(_buildDiagnostic(path));
     }
@@ -196,11 +198,6 @@ class UnusedSourceFileRule implements MultiFileAnalyzerRule {
         yield resolved.source.fullName;
       }
     }
-  }
-
-  bool _isGenerated(String filePath) {
-    final base = p.basename(filePath);
-    return base.endsWith('.g.dart') || base.endsWith('.freezed.dart');
   }
 
   Diagnostic _buildDiagnostic(String filePath) {

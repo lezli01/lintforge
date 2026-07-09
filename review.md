@@ -262,7 +262,8 @@ local function findings nested inside its body.
 3. Make samples pure Dart and executable again. **Status: done 2026-07-09.**
 4. Fix test isolation or force serial test execution in CI. **Status: done
    2026-07-09.**
-5. Share/generated-code detection across unused rules.
+5. Share/generated-code detection across unused rules. **Status: done
+   2026-07-09.**
 6. Validate unknown `--rules` ids.
 7. Decide whether `unused_class` should become multi-file.
 8. Narrow conditional branch suppression.
@@ -311,6 +312,17 @@ local function findings nested inside its body.
   without changing the process CWD.
 - Validation: focused parallel runner/sample tests; `fvm dart analyze`; plain
   parallel `fvm dart test --reporter=expanded`; `fvm flutter test`.
+- 2026-07-09: Completed item 5. Added a shared generated-source predicate for
+  conventional generated Dart basenames and top-of-file
+  `// ignore_for_file: type=lint` markers, and wired both unused rules to use
+  it. `unused_source_file` now skips generated files that do not use a
+  generated basename, while `unused_function` also shares the defensive
+  basename skip when generated outputs are reportable. Added an
+  `unused_source_file` regression covering an orphan generated file without a
+  generated basename.
+- Validation: `fvm dart format` on touched Dart files; `fvm dart analyze`;
+  focused `unused_source_file` and `unused_function` tests; full
+  `fvm flutter test`.
 
 ## Notes
 
