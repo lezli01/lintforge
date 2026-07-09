@@ -141,6 +141,21 @@ void main() {
       );
 
       test(
+        'does not flag public constructors on a public class under lib/',
+        () async {
+          final diagnostics = await runRule({
+            p.join('lib', 'thing.dart'):
+                'class Thing {\n'
+                '  Thing();\n'
+                '  Thing.named();\n'
+                '  factory Thing.make() = Thing;\n'
+                '}\n',
+          });
+          expect(diagnostics, isEmpty);
+        },
+      );
+
+      test(
         'still flags a private member of a public class under lib/',
         () async {
           final diagnostics = await runRule({
@@ -151,6 +166,24 @@ void main() {
           final diagnostic = diagnostics.single;
           expect(diagnostic.ruleId, 'unused_function');
           expect(diagnostic.message, contains('_helper'));
+        },
+      );
+
+      test(
+        'still flags a private constructor of a public class under lib/',
+        () async {
+          final diagnostics = await runRule({
+            p.join('lib', 'thing.dart'):
+                'class Thing {\n'
+                '  Thing();\n'
+                '  Thing._helper();\n'
+                '}\n',
+          });
+          expect(diagnostics, hasLength(1));
+          final diagnostic = diagnostics.single;
+          expect(diagnostic.ruleId, 'unused_function');
+          expect(diagnostic.message, contains('_helper'));
+          expect(diagnostic.message, contains('constructor'));
         },
       );
 
@@ -169,6 +202,25 @@ void main() {
           final diagnostic = diagnostics.single;
           expect(diagnostic.ruleId, 'unused_function');
           expect(diagnostic.message, contains('doWork'));
+        },
+      );
+
+      test(
+        'still flags a public constructor of a private class under lib/',
+        () async {
+          final diagnostics = await runRule({
+            p.join('lib', 'thing.dart'):
+                'class _Thing {\n'
+                '  _Thing();\n'
+                '  _Thing.named();\n'
+                '}\n'
+                '_Thing build() => _Thing();\n',
+          });
+          expect(diagnostics, hasLength(1));
+          final diagnostic = diagnostics.single;
+          expect(diagnostic.ruleId, 'unused_function');
+          expect(diagnostic.message, contains('named'));
+          expect(diagnostic.message, contains('constructor'));
         },
       );
     });
@@ -201,6 +253,27 @@ void main() {
           final diagnostic = diagnostics.single;
           expect(diagnostic.ruleId, 'unused_function');
           expect(diagnostic.message, contains('doubledLength'));
+        },
+      );
+
+      test(
+        'flags an unreferenced public constructor on a public class',
+        () async {
+          final diagnostics = await runRule({
+            p.join('lib', 'src', 'thing.dart'):
+                'class Thing {\n'
+                '  Thing();\n'
+                '  Thing.named();\n'
+                '}\n'
+                'void main() {\n'
+                '  Thing();\n'
+                '}\n',
+          });
+          expect(diagnostics, hasLength(1));
+          final diagnostic = diagnostics.single;
+          expect(diagnostic.ruleId, 'unused_function');
+          expect(diagnostic.message, contains('named'));
+          expect(diagnostic.message, contains('constructor'));
         },
       );
 

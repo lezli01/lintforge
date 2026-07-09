@@ -257,7 +257,7 @@ local function findings nested inside its body.
 
 ## Suggested Fix Order
 
-1. Fix public constructor API exemption.
+1. Fix public constructor API exemption. **Status: done 2026-07-09.**
 2. Fix private extension silence.
 3. Make samples pure Dart and executable again.
 4. Fix test isolation or force serial test execution in CI.
@@ -266,6 +266,18 @@ local function findings nested inside its body.
 7. Decide whether `unused_class` should become multi-file.
 8. Narrow conditional branch suppression.
 9. Add executable-level nested suppression for local functions.
+
+## Implementation Progress
+
+- 2026-07-09: Completed item 1. Public constructors on public types outside
+  `lib/src/` now use the same API-surface exemption as public methods,
+  getters, setters, operators, and extension members. Private constructors,
+  constructors on private types, and public constructors under `lib/src/`
+  remain candidates.
+- Validation: `fvm dart analyze`; focused unused-function tests; canonical
+  sample test; direct sample CLI probe; full serial `fvm dart test -j 1`.
+  The direct `samples/unused_source_file` run still shows the known
+  package-config-related extra finding already tracked by item 3.
 
 ## Notes
 

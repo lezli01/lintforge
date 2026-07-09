@@ -26,9 +26,10 @@ void main() {
 
     Future<List<Diagnostic>> runRule(
       String content, {
-      String fileName = 'fixture.dart',
+      String fileName = 'lib/src/fixture.dart',
     }) async {
       final fixture = File(p.join(tempDir.path, fileName));
+      fixture.parent.createSync(recursive: true);
       fixture.writeAsStringSync(content);
 
       final dartFiles = <String>[
@@ -218,9 +219,10 @@ void main() {
 
     Future<List<Diagnostic>> runRule(
       String content, {
-      String fileName = 'fixture.dart',
+      String fileName = 'lib/src/fixture.dart',
     }) async {
       final fixture = File(p.join(tempDir.path, fileName));
+      fixture.parent.createSync(recursive: true);
       fixture.writeAsStringSync(content);
 
       final dartFiles = <String>[
