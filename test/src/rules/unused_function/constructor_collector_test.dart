@@ -130,6 +130,22 @@ void main() {
       expect(diagnostics, isEmpty);
     });
 
+    test('flags an unused named enum constructor outside lib/src', () async {
+      final diagnostics = await runRule('''
+enum E {
+  a;
+
+  const E();
+  const E.named();
+}
+void main() {
+  E.a;
+}
+''', fileName: 'lib/fixture.dart');
+      expect(diagnostics, hasLength(1));
+      expect(_constructorDiagnosticsNamed(diagnostics, 'named'), hasLength(1));
+    });
+
     test('counts a constructor tear-off as a use', () async {
       final diagnostics = await runRule('''
 class MyClass {

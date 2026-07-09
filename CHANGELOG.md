@@ -12,6 +12,11 @@
 - Suppressed `unused_function` local-function diagnostics nested inside an
   unused enclosing executable already reported by the rule.
 
+### Fixed
+
+- Kept public enum constructors eligible for `unused_function` diagnostics when
+  no enum value invokes them.
+
 ## [0.4.1](https://github.com/lezli01/lintforge/compare/v0.4.0...v0.4.1) (2026-07-08)
 
 

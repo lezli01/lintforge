@@ -10,9 +10,10 @@ part of '../unused_function_rule.dart';
 /// constructor has no [ConstructorDeclaration] in the source.
 ///
 /// A constructor is exempt when it is `external`, carries
-/// `@pragma('vm:entry-point')`, or forms part of a public type's public
-/// API surface outside `lib/src/`. The collector additionally skips
-/// every constructor on a class or enum when the enclosing declaration —
+/// `@pragma('vm:entry-point')`, or is declared on a public class as part of
+/// that class's public API surface outside `lib/src/`. Enum constructors are
+/// not externally invocable API, so they remain candidates. The collector
+/// additionally skips every constructor on a class or enum when the enclosing declaration —
 /// or any class / mixin / interface reached through `extends`, `with`,
 /// `implements`, or mixin `on` clauses — declares its own
 /// `noSuchMethod`, because such a type can intercept any
@@ -70,6 +71,7 @@ class _ConstructorCollector implements _UnusedFunctionCandidateCollector {
             classNameToken,
             enclosingTypeName: classNameToken.lexeme,
             filePath: unit.path,
+            canBePublicApi: true,
           );
           if (candidate != null) yield candidate;
         }
@@ -90,6 +92,7 @@ class _ConstructorCollector implements _UnusedFunctionCandidateCollector {
             enumNameToken,
             enclosingTypeName: enumNameToken.lexeme,
             filePath: unit.path,
+            canBePublicApi: false,
           );
           if (candidate != null) yield candidate;
         }
@@ -102,15 +105,17 @@ class _ConstructorCollector implements _UnusedFunctionCandidateCollector {
     Token classNameToken, {
     required String enclosingTypeName,
     required String filePath,
+    required bool canBePublicApi,
   }) {
     if (declaration.externalKeyword != null) return null;
     if (_hasVmEntryPointPragma(declaration.metadata)) return null;
     final nameToken = declaration.name ?? classNameToken;
-    if (_isPublicMemberOfPublicTypeOutsideLibSrc(
-      nameToken.lexeme,
-      enclosingTypeName,
-      filePath,
-    )) {
+    if (canBePublicApi &&
+        _isPublicMemberOfPublicTypeOutsideLibSrc(
+          nameToken.lexeme,
+          enclosingTypeName,
+          filePath,
+        )) {
       return null;
     }
     final element = declaration.declaredFragment?.element;
@@ -119,10 +124,9 @@ class _ConstructorCollector implements _UnusedFunctionCandidateCollector {
       nameToken: nameToken,
       element: _declaredElement(element),
       kindLabel: 'constructor',
-      isConditionalBranchApi: _isPublicMemberOfPublicType(
-        nameToken.lexeme,
-        enclosingTypeName,
-      ),
+      isConditionalBranchApi:
+          canBePublicApi &&
+          _isPublicMemberOfPublicType(nameToken.lexeme, enclosingTypeName),
     );
   }
 }

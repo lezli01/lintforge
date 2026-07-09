@@ -273,11 +273,11 @@ local function findings nested inside its body.
 
 ## Implementation Progress
 
-- 2026-07-09: Completed item 1. Public constructors on public types outside
-  `lib/src/` now use the same API-surface exemption as public methods,
+- 2026-07-09: Completed item 1. Public class constructors on public classes
+  outside `lib/src/` now use the same API-surface exemption as public methods,
   getters, setters, operators, and extension members. Private constructors,
-  constructors on private types, and public constructors under `lib/src/`
-  remain candidates.
+  constructors on private types, enum constructors, and public class
+  constructors under `lib/src/` remain candidates.
 - Validation: `fvm dart analyze`; focused unused-function tests; canonical
   sample test; direct sample CLI probe; full serial `fvm dart test -j 1`.
   The direct `samples/unused_source_file` run still shows the known
@@ -353,7 +353,7 @@ local function findings nested inside its body.
 - 2026-07-09: Completed item 8. Conditional import/export branch target files
   now still run through the `unused_function` collectors, but the dispatch site
   only exempts candidates that form public branch API: public top-level
-  declarations and public members or constructors on public enclosing
+  declarations, public members, and public class constructors on public enclosing
   declarations. Private helpers inside branch files remain reportable.
 - 2026-07-09: Completed item 9. Local-function candidates now carry their
   enclosing executable elements from the AST. When an outer function, method, or
